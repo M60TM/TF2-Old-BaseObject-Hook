@@ -7,7 +7,9 @@ plugins = [
 
 # files to copy to builddir, relative to root
 # plugin names from previous list will be copied automatically
-copy_files = [ ]
+copy_files = [
+	'gamedata/tf2.cattr_object.txt'
+]
 
 # additional directories for sourcepawn include lookup
 # `scripting/include` is explicitly included
