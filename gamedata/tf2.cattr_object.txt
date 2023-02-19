@@ -1,0 +1,229 @@
+"Games"
+{
+	"tf"
+	{
+		"Functions"
+		{
+			"CBaseTrigger::EndTouch()"
+			{
+				"offset"		"CBaseTrigger::EndTouch()"
+				"hooktype"		"entity"
+				"return"		"void"
+				"this"			"entity"
+				
+				"arguments"
+				{
+					"pOther"
+					{
+						"type"	"cbaseentity"
+					}
+				}
+			}
+			"CObjectSentrygun::SetModel()"
+			{
+				"offset"		"CObjectSentrygun::SetModel()"
+				"hooktype"		"entity"
+				"return"		"void"
+				"this"			"entity"
+
+				"arguments"
+				{
+					"pModel"
+					{
+						"type"	"charptr"
+					}
+				}
+			}
+			"CObjectDispenser::SetModel()"
+			{
+				"offset"		"CObjectDispenser::SetModel()"
+				"hooktype"		"entity"
+				"return"		"void"
+				"this"			"entity"
+
+				"arguments"
+				{
+					"pModel"
+					{
+						"type"	"charptr"
+					}
+				}
+			}
+			"CObjectTeleporter::SetModel()"
+			{
+				"offset"		"CObjectTeleporter::SetModel()"
+				"hooktype"		"entity"
+				"return"		"void"
+				"this"			"entity"
+
+				"arguments"
+				{
+					"pModel"
+					{
+						"type"	"charptr"
+					}
+				}
+			}
+			"CBaseObject::OnGoActive()"
+			{
+				"offset"		"CBaseObject::OnGoActive()"
+				"hooktype"		"entity"
+				"return"		"void"
+				"this"			"entity"
+			}
+			"CBaseObject::StartUpgrading()"
+			{
+				"offset"		"CBaseObject::StartUpgrading()"
+				"hooktype"		"entity"
+				"return"		"void"
+				"this"			"entity"
+			}
+			"CBaseObject::FinishUpgrading()"
+			{
+				"offset"		"CBaseObject::FinishUpgrading()"
+				"hooktype"		"entity"
+				"return"		"void"
+				"this"			"entity"
+			}
+			"CBaseObject::GetMaxHealthForCurrentLevel()"
+			{
+				"offset"		"CBaseObject::GetMaxHealthForCurrentLevel()"
+				"hooktype"		"entity"
+				"return"		"int"
+				"this"			"entity"
+			}
+			"CObjectDispenser::StopHealing()"
+			{
+				"signature"		"CObjectDispenser::StopHealing()"
+				"callconv"		"thiscall"
+				"return"		"void"
+				"this"			"entity"
+				
+				"arguments"
+				{
+					"pOther"
+					{
+						"type"	"cbaseentity"
+					}
+				}
+			}
+			"CObjectDispenser::StartHealing()"
+			{
+				"offset"		"CObjectDispenser::StartHealing()"
+				"hooktype"		"entity"
+				"return"		"void"
+				"this"			"entity"
+				
+				"arguments"
+				{
+					"pOther"
+					{
+						"type"	"cbaseentity"
+					}
+				}
+			}
+			"CTFPlayerShared::CalculateObjectCost()"
+			{
+				"signature"		"CTFPlayerShared::CalculateObjectCost()"
+				"callconv"		"thiscall"
+				"return"		"int"
+				"this"			"address"
+				"arguments"
+				{
+					"player"
+					{
+						"type"	"cbaseentity"
+					}
+					"type"
+					{
+						"type"	"int"
+					}
+				}
+			}
+		}
+
+		"Signatures"
+		{
+			"CObjectDispenser::StopHealing()"
+			{
+				"library"	"server"
+				"linux"		"@_ZN16CObjectDispenser11StopHealingEP11CBaseEntity"
+				"windows"	"\x55\x89\xE5\x57\x56\x53\x83\xEC\x2C\x8B\x75\x08\x8B\x5D\x0C\x89\x34\x24\x89\x5C\x24\x04"
+			}
+			"CTFPlayerShared::CalculateObjectCost()"
+			{
+				"library"	"server"
+				"linux"		"@_ZN15CTFPlayerShared19CalculateObjectCostEP9CTFPlayeri"
+				"windows"	"\x55\x89\xE5\x57\x56\x53\x83\xEC\x6C\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74\x2A\x80\xB8\x7A\x09\x00\x00\x00\x0F\x85\x2A\x2A\x2A\x2A\x8B\x45\x10"
+			}
+			"CTFPlayer::DetonateObjectOfType()"
+			{
+				"library"	"server"
+				"linux"		"@_ZN9CTFPlayer20DetonateObjectOfTypeEiib"
+				"windows"	"\x55\x8B\xEC\x51\x53\x57\xFF\x75\x0C\x8B\xD9\xFF\x75\x08\x89\x5D\xFC\xE8\x2A\x2A\x2A\x2A\x8B\xF8"
+			}
+			"CTFPlayer::GetObjectOfType()"
+			{
+				// first call in "CTFPlayer::DetonateObjectOfType()"
+				"library"	"server"
+				"linux"		"@_ZNK9CTFPlayer15GetObjectOfTypeEii"
+				"windows"	"\x55\x8B\xEC\x51\x53\x8B\xC1\x56\x57\x33\xFF\x89\x45\xFC\x8B\x98\x2A\x22\x00\x00"
+			}
+			"CBaseObject::DestroyScreens()"
+			{
+				"library"	"server"
+				"linux"		"@_ZN11CBaseObject14DestroyScreensEv"
+				"windows"	"\x56\x57\x8B\xF9\x8B\xB7\x2A\x09\x00\x00"
+			}
+		}
+
+		"Offsets"
+		{
+			"CBaseTrigger::EndTouch()"
+			{
+				"windows"	"105"
+				"linux"		"106"
+			}
+			"CObjectSentrygun::SetModel()"
+			{
+				"windows"	"26"
+				"linux"		"27"
+			}
+			"CObjectDispenser::SetModel()"
+			{
+				"windows"	"26"
+				"linux"		"27"
+			}
+			"CObjectTeleporter::SetModel()"
+			{
+				"windows"	"26"
+				"linux"		"27"
+			}
+			"CBaseObject::OnGoActive()"
+			{
+				"windows"	"372"
+				"linux"		"374"
+			}
+			"CBaseObject::StartUpgrading()"
+			{
+				"windows"	"382"
+				"linux"		"384"
+			}
+			"CBaseObject::FinishUpgrading()"
+			{
+				"windows"	"383"
+				"linux"		"385"
+			}
+			"CBaseObject::GetMaxHealthForCurrentLevel()"
+			{
+				"windows"	"390"
+				"linux"		"392"
+			}
+			"CObjectDispenser::StartHealing()"
+			{
+				"windows"	"415"
+				"linux"		"429"
+			}
+		}
+	}
+}
