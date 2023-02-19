@@ -2,7 +2,7 @@
 
 # plugin names, relative to `scripting/`
 plugins = [
-	'sample_plugin.sp',
+	'tf2ca_custom_building.sp',
 ]
 
 # files to copy to builddir, relative to root
@@ -16,7 +16,7 @@ include_dirs = [
 ]
 
 # required version of spcomp (presumably pinned to SM version)
-spcomp_min_version = (1, 9)
+spcomp_min_version = (1, 11)
 
 ########################
 # build.ninja script generation below.
