@@ -1,5 +1,7 @@
 name: Build Workflow
 
+permissions: write-all
+
 on:
   push:
     # you may need change this so it applies to the correct branch
