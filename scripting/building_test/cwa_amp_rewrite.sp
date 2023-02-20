@@ -11,6 +11,14 @@
 
 #define ATTR_AMP "build amplifier"
 
+public Plugin myinfo = {
+	name = "[TF2] Custom Attribute: Amplifier",
+	author = "Sandy",
+	description = "Mini Crits!",
+	version = "1.0.0",
+	url = ""
+}
+
 public void TF2CA_DispenserStartHealing(int builder, int building, int patient)
 {
     if (builder == -1)
