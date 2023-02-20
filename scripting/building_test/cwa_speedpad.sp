@@ -6,7 +6,6 @@
 #pragma newdecls required
 
 #include <tf2attributes>
-#include <tf_custom_attributes>
 #include <tf2ca_custom_building>
 #include <stocksoup/tf/entity_prop_stocks>
 
