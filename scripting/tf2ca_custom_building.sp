@@ -32,8 +32,6 @@ Handle g_OnObjectRemovedForward;
 Handle g_OnObjectDestroyedForward;
 Handle g_OnObjectDetonatedForward;
 Handle g_ObjectOnGoActiveForward;
-Handle g_ObjectStartUpgradingForward;
-Handle g_ObjectFinishUpgradingForward;
 Handle g_DispenserStartHealingForward;
 Handle g_DispenserStopHealingForward;
 
@@ -48,8 +46,6 @@ Handle g_SDKCallPlayerGetObjectOfType;
  * DHook
  */
 Handle g_DHookObjectOnGoActive;
-Handle g_DHookObjectStartUpgrading;
-Handle g_DHookObjectFinishUpgrading;
 Handle g_DHookDispenserStartHealing;
 
 Handle g_DHookObjectGetMaxHealth;
@@ -100,8 +96,6 @@ public void OnPluginStart()
     g_SDKCallBuildingDestroyScreens = EndPrepSDKCall();
     
     g_DHookObjectOnGoActive = DHookCreateFromConf(hGameConf, "CBaseObject::OnGoActive()");
-    g_DHookObjectStartUpgrading = DHookCreateFromConf(hGameConf, "CBaseObject::StartUpgrading()");
-    g_DHookObjectFinishUpgrading = DHookCreateFromConf(hGameConf, "CBaseObject::FinishUpgrading()");
     g_DHookDispenserStartHealing = DHookCreateFromConf(hGameConf, "CObjectDispenser::StartHealing()");
 
     g_DHookObjectGetMaxHealth = DHookCreateFromConf(hGameConf, "CBaseObject::GetMaxHealthForCurrentLevel()");
@@ -140,12 +134,6 @@ public void OnPluginStart()
 			Param_Cell, Param_Cell);
 
     g_ObjectOnGoActiveForward = CreateGlobalForward("TF2CA_ObjectOnGoActive", ET_Event, Param_Cell,
-			Param_Cell, Param_Cell);
-
-    g_ObjectStartUpgradingForward = CreateGlobalForward("TF2CA_ObjectStartUpgrading", ET_Event, Param_Cell,
-			Param_Cell, Param_Cell);
-
-    g_ObjectFinishUpgradingForward = CreateGlobalForward("TF2CA_ObjectFinishUpgrading", ET_Event, Param_Cell,
 			Param_Cell, Param_Cell);
 
     g_DispenserStartHealingForward = CreateGlobalForward("TF2CA_DispenserStartHealing", ET_Event, Param_Cell,
@@ -269,8 +257,6 @@ public void OnEntityCreated(int entity, const char[] classname)
 void SetupObjectDHooks(int building, TFObjectType type)
 {
     DHookEntity(g_DHookObjectOnGoActive, true, building, .callback = ObjectOnGoActivePost);
-    DHookEntity(g_DHookObjectStartUpgrading, true, building, .callback = ObjectStartUpgradingPost);
-    DHookEntity(g_DHookObjectFinishUpgrading, true, building, .callback = ObjectFinishUpgradingPost);
 
     if (type == TFObject_Dispenser)
     {
@@ -494,36 +480,6 @@ MRESReturn ObjectOnGoActivePost(int building)
     TFObjectType buildingtype = TF2_GetObjectType(building);
     
     Call_StartForward(g_ObjectOnGoActiveForward);
-    Call_PushCell(builder);
-    Call_PushCell(building);
-    Call_PushCell(buildingtype);
-    Call_Finish();
-
-    return MRES_Handled;
-}
-
-MRESReturn ObjectStartUpgradingPost(int building)
-{
-    int builder = TF2_GetObjectBuilder(building);
-    
-    TFObjectType buildingtype = TF2_GetObjectType(building);
-    
-    Call_StartForward(g_ObjectStartUpgradingForward);
-    Call_PushCell(builder);
-    Call_PushCell(building);
-    Call_PushCell(buildingtype);
-    Call_Finish();
-
-    return MRES_Handled;
-}
-
-MRESReturn ObjectFinishUpgradingPost(int building)
-{
-    int builder = TF2_GetObjectBuilder(building);
-    
-    TFObjectType buildingtype = TF2_GetObjectType(building);
-    
-    Call_StartForward(g_ObjectFinishUpgradingForward);
     Call_PushCell(builder);
     Call_PushCell(building);
     Call_PushCell(buildingtype);

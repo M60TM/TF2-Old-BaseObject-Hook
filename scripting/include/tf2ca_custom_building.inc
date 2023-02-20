@@ -133,24 +133,6 @@ forward void TF2CA_OnObjectDetonated(int builder, int building, TFObjectType bui
 forward void TF2CA_ObjectOnGoActive(int builder, int building, TFObjectType buildingtype);
 
 /**
- * Called When object start upgrade.
- * 
- * @param builder				object builder.
- * @param building  			object's index.
- * @param buildingtype  		object's type.
- */
-forward void TF2CA_ObjectStartUpgrading(int builder, int building, TFObjectType buildingtype);
-
-/**
- * Called When object finish upgrade.
- * 
- * @param builder				object builder.
- * @param building  			object's index.
- * @param buildingtype  		object's type.
- */
-forward void TF2CA_ObjectFinishUpgrading(int builder, int building, TFObjectType buildingtype);
-
-/**
  * Called When dispenser start healing.
  * 
  * @param builder
