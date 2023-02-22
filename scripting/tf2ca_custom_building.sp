@@ -16,9 +16,9 @@
 public Plugin myinfo = {
 	name = "[TF2] Custom Attribute: Custom Building",
 	author = "Sandy and Monera",
-	description = "A few native and attributes, forwards for handling custom building.",
-	version = "1.1.1",
-	url = ""
+	description = "A few native and custom attributes, forwards for handling custom building.",
+	version = "1.1.2",
+	url = "https://github.com/M60TM/TF2CA-Custom-Building"
 }
 
 /**
@@ -47,7 +47,6 @@ Handle g_SDKCallPlayerGetObjectOfType;
  */
 Handle g_DHookObjectOnGoActive;
 Handle g_DHookDispenserStartHealing;
-
 Handle g_DHookObjectGetMaxHealth;
 Handle g_DHookSentrySetModel;
 Handle g_DHookDispenserSetModel;
@@ -109,6 +108,9 @@ public void OnPluginStart()
 
     Handle DHookDispenserStopHealing = DHookCreateFromConf(hGameConf, "CObjectDispenser::StopHealing()");
     DHookEnableDetour(DHookDispenserStopHealing, true, OnDispenserStopHealingPost);
+
+    Handle DHookGetConstructionMultiplier = DHookCreateFromConf(hGameConf, "CBaseObject::GetConstructionMultiplier()");
+    DHookEnableDetour(DHookGetConstructionMultiplier, true, GetConstructionMultiplierPost);
 
     delete hGameConf;
 
@@ -536,6 +538,34 @@ MRESReturn OnDispenserStopHealingPost(int building, DHookParam hParams)
     Call_Finish();
 
     return MRES_Handled;
+}
+
+MRESReturn GetConstructionMultiplierPost(int building, DHookReturn hReturn)
+{
+    int builder = TF2_GetObjectBuilder(building);
+    if (!IsValidClient(builder))
+    {
+        return MRES_Ignored;
+    }
+
+    int pda = GetPlayerWeaponSlot(builder, 3);
+    if (IsValidEntity(pda))
+    {
+        if (TF2_GetObjectType(building) == TFObject_Dispenser)
+        {
+            float buildrate = TF2CustAttr_GetFloat(pda, "engineer dispenser build rate multiplier", 1.0);
+            if (buildrate >= 0 && buildrate != 1.0)
+            {
+                float returnvalue = DHookGetReturn(hReturn);
+                returnvalue *= buildrate;
+                DHookSetReturn(hReturn, returnvalue);
+
+                return MRES_Override;
+            }
+        }
+    }
+
+    return MRES_Ignored;
 }
 
 MRESReturn ObjectGetMaxHealthPost(int building, DHookReturn hReturn)
