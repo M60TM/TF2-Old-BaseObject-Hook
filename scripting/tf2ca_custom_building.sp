@@ -17,7 +17,7 @@ public Plugin myinfo = {
 	name = "[TF2] Custom Attribute: Custom Building",
 	author = "Sandy and Monera",
 	description = "A few native and custom attributes, forwards for handling custom building.",
-	version = "1.1.2",
+	version = "1.1.3",
 	url = "https://github.com/M60TM/TF2CA-Custom-Building"
 }
 
@@ -487,7 +487,7 @@ MRESReturn ObjectOnGoActivePost(int building)
     Call_PushCell(buildingtype);
     Call_Finish();
 
-    return MRES_Handled;
+    return MRES_Ignored;
 }
 
 MRESReturn DispenserStartHealingPost(int building, Handle hParams)
@@ -512,7 +512,7 @@ MRESReturn DispenserStartHealingPost(int building, Handle hParams)
     Call_PushCell(patient);
     Call_Finish();
 
-    return MRES_Handled;
+    return MRES_Ignored;
 }
 
 MRESReturn OnDispenserStopHealingPost(int building, DHookParam hParams)
@@ -537,7 +537,7 @@ MRESReturn OnDispenserStopHealingPost(int building, DHookParam hParams)
     Call_PushCell(patient);
     Call_Finish();
 
-    return MRES_Handled;
+    return MRES_Ignored;
 }
 
 MRESReturn GetConstructionMultiplierPost(int building, DHookReturn hReturn)
