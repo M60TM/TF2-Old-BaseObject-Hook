@@ -254,6 +254,10 @@ public void OnEntityCreated(int entity, const char[] classname)
         DHookEntity(g_DHookTeleporterSetModel, false, entity, .callback = TeleporterSetModelPre);
         DHookEntity(g_DHookObjectGetMaxHealth, true, entity, .callback = ObjectGetMaxHealthPost);
     }
+    else if(StrEqual(classname, "tf_projectile_sentryrocket"))
+    {
+        SDKHook(entity, SDKHook_SpawnPost, SentryRocketSpawnPost);
+    }
 }
 
 void SetupObjectDHooks(int building, TFObjectType type)
@@ -263,6 +267,33 @@ void SetupObjectDHooks(int building, TFObjectType type)
     if (type == TFObject_Dispenser)
     {
         DHookEntity(g_DHookDispenserStartHealing, true, building, .callback = DispenserStartHealingPost);
+    }
+}
+
+void SentryRocketSpawnPost(int rocket)
+{
+    int owner = GetEntPropEnt(rocket, Prop_Data, "m_hOwnerEntity");
+
+    int builder = GetEntPropEnt(owner, Prop_Send, "m_hBuilder");
+
+    if (IsValidClient(builder))
+	{
+		char sAttributes[256];
+		if(BuilderHasCustomAttributeString(builder, "custom sentry rocket model", sAttributes, sizeof(sAttributes)))
+		{
+			SetSentryRocketModel(rocket, sAttributes);
+		}
+	}
+    
+    return;
+}
+
+stock void SetSentryRocketModel(int entity, char[] attr)
+{
+	if (FileExistsAndLog(attr, true))
+    {
+        PrecacheModelAndLog(attr);
+        SetEntityModel(entity, attr);
     }
 }
 
