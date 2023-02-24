@@ -147,6 +147,13 @@
 				"return"    "float"
 				"this"      "entity"
 			}
+			"CObjectDispenser::GetHealRate()"
+			{
+				"offset"		"CObjectDispenser::GetHealRate()"
+				"hooktype"		"entity"
+				"return"		"float"
+				"this"			"entity"
+			}
 		}
 
 		"Signatures"
@@ -226,6 +233,11 @@
 			{
 				"windows"	"415"
 				"linux"		"429"
+			}
+			"CObjectDispenser::GetHealRate()"
+			{
+				"windows"	"414"
+				"linux"		"428"
 			}
 		}
 	}

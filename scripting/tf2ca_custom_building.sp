@@ -51,6 +51,7 @@ Handle g_DHookObjectGetMaxHealth;
 Handle g_DHookSentrySetModel;
 Handle g_DHookDispenserSetModel;
 Handle g_DHookTeleporterSetModel;
+Handle g_DHookGetHealRate;
 
 char g_sCustomBuildingType[MAXPLAYERS + 1][3][64];
 
@@ -102,6 +103,8 @@ public void OnPluginStart()
     g_DHookSentrySetModel = DHookCreateFromConf(hGameConf, "CObjectSentrygun::SetModel()");
     g_DHookDispenserSetModel = DHookCreateFromConf(hGameConf, "CObjectDispenser::SetModel()");
     g_DHookTeleporterSetModel = DHookCreateFromConf(hGameConf, "CObjectTeleporter::SetModel()");
+
+    g_DHookGetHealRate = DHookCreateFromConf(hGameConf, "CObjectDispenser::GetHealRate()");
 
     Handle DHookCalculateObjectCost = DHookCreateFromConf(hGameConf, "CTFPlayerShared::CalculateObjectCost()");
     DHookEnableDetour(DHookCalculateObjectCost, true, OnCalculateObjectCostPost);
@@ -248,6 +251,7 @@ public void OnEntityCreated(int entity, const char[] classname)
     {
         DHookEntity(g_DHookDispenserSetModel, false, entity, .callback = DispenserSetModelPre);
         DHookEntity(g_DHookObjectGetMaxHealth, true, entity, .callback = ObjectGetMaxHealthPost);
+        DHookEntity(g_DHookGetHealRate, true, entity, .callback = DispenserGetHealRatePost);
     }
     else if(StrEqual(classname, "obj_teleporter"))
     {
@@ -685,6 +689,29 @@ MRESReturn ObjectGetMaxHealthPost(int building, DHookReturn hReturn)
             }
         }
 	}
+    
+    return MRES_Ignored;
+}
+
+MRESReturn DispenserGetHealRatePost(int building, DHookReturn hReturn)
+{
+    int builder = TF2_GetObjectBuilder(building);
+    if (!IsValidClient(builder))
+    {
+        return MRES_Ignored;
+    }
+
+    int pda = GetPlayerWeaponSlot(builder, 3);
+    if (IsValidEntity(pda))
+    {
+        if(TF2CustAttr_GetFloat(pda, "custom dispenser healrate multiplier") != 1.0)
+        {
+            float healrate = DHookGetReturn(hReturn);
+            healrate *= TF2CustAttr_GetFloat(pda, "custom dispenser healrate multiplier");
+            DHookSetReturn(hReturn, healrate);
+            return MRES_Override;
+        }
+    }
     
     return MRES_Ignored;
 }
