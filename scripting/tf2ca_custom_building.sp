@@ -704,10 +704,10 @@ MRESReturn DispenserGetHealRatePost(int building, DHookReturn hReturn)
     int pda = GetPlayerWeaponSlot(builder, 3);
     if (IsValidEntity(pda))
     {
-        if(TF2CustAttr_GetFloat(pda, "custom dispenser healrate multiplier") != 1.0)
+        if(TF2CustAttr_GetFloat(pda, "dispenser healrate multiplier", 1.0) != 1.0)
         {
             float healrate = DHookGetReturn(hReturn);
-            healrate *= TF2CustAttr_GetFloat(pda, "custom dispenser healrate multiplier");
+            healrate *= TF2CustAttr_GetFloat(pda, "dispenser healrate multiplier");
             DHookSetReturn(hReturn, healrate);
             return MRES_Override;
         }
