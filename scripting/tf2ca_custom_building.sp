@@ -13,17 +13,22 @@
 #include <stocksoup/tf/entity_prop_stocks>
 #include <stocksoup/var_strings>
 
+/////////////////////////////
+// PLUGIN INFO             //
+/////////////////////////////
+
 public Plugin myinfo = {
 	name = "[TF2] Custom Attribute: Custom Building",
 	author = "Sandy and Monera",
 	description = "A few native and custom attributes, forwards for handling custom building.",
-	version = "1.1.3",
+	version = "1.2.0",
 	url = "https://github.com/M60TM/TF2CA-Custom-Building"
 }
 
-/**
- * Forward
- */
+/////////////////////////////
+// Forward                 //
+/////////////////////////////
+
 Handle g_OnBuildObjectForward;
 Handle g_OnUpgradeObjectForward;
 Handle g_OnCarryObjectForward;
@@ -35,16 +40,18 @@ Handle g_ObjectOnGoActiveForward;
 Handle g_DispenserStartHealingForward;
 Handle g_DispenserStopHealingForward;
 
-/**
- * SDKCall
- */
+/////////////////////////////
+// SDKCall                 //
+/////////////////////////////
+
 Handle g_SDKCallDetonateObjectOfType;
 Handle g_SDKCallBuildingDestroyScreens;
 Handle g_SDKCallPlayerGetObjectOfType;
 
-/**
- * DHook
- */
+/////////////////////////////
+// DHooks                  //
+/////////////////////////////
+
 Handle g_DHookObjectOnGoActive;
 Handle g_DHookDispenserStartHealing;
 Handle g_DHookObjectGetMaxHealth;
@@ -163,6 +170,52 @@ public void OnMapStart()
     g_MissingModels = new StringMap();
 }
 
+public void OnEntityCreated(int entity, const char[] classname)
+{
+    if(StrEqual(classname, "obj_sentrygun"))
+    {
+        DHookEntity(g_DHookSentrySetModel, false, entity, .callback = SentrySetModelPre);
+        DHookEntity(g_DHookObjectGetMaxHealth, true, entity, .callback = ObjectGetMaxHealthPost);
+    }
+    else if(StrEqual(classname, "obj_dispenser"))
+    {
+        DHookEntity(g_DHookDispenserSetModel, false, entity, .callback = DispenserSetModelPre);
+        DHookEntity(g_DHookObjectGetMaxHealth, true, entity, .callback = ObjectGetMaxHealthPost);
+        DHookEntity(g_DHookGetHealRate, true, entity, .callback = DispenserGetHealRatePost);
+    }
+    else if(StrEqual(classname, "obj_teleporter"))
+    {
+        DHookEntity(g_DHookTeleporterSetModel, false, entity, .callback = TeleporterSetModelPre);
+        DHookEntity(g_DHookObjectGetMaxHealth, true, entity, .callback = ObjectGetMaxHealthPost);
+    }
+    else if(StrEqual(classname, "tf_projectile_sentryrocket"))
+    {
+        SDKHook(entity, SDKHook_SpawnPost, SentryRocketSpawnPost);
+    }
+}
+
+void SentryRocketSpawnPost(int rocket)
+{
+    int owner = GetEntPropEnt(rocket, Prop_Data, "m_hOwnerEntity");
+
+    int builder = GetEntPropEnt(owner, Prop_Send, "m_hBuilder");
+
+    if (IsValidClient(builder))
+	{
+		char sAttributes[256];
+		if(TF2CustAttr_ClientHasString(builder, "custom sentry rocket model", sAttributes, sizeof(sAttributes)))
+		{
+			SetSentryRocketModel(rocket, sAttributes);
+		}
+	}
+    
+    return;
+}
+
+/////////////////////////////
+// Events                  //
+/////////////////////////////
+
 void OnInventoryAppliedPost(Event event, const char[] name, bool dontBroadcast)
 {
     int client = GetClientOfUserId(event.GetInt("userid"));
@@ -240,67 +293,6 @@ void OnInventoryAppliedPost(Event event, const char[] name, bool dontBroadcast)
     }
 }
 
-public void OnEntityCreated(int entity, const char[] classname)
-{
-    if(StrEqual(classname, "obj_sentrygun"))
-    {
-        DHookEntity(g_DHookSentrySetModel, false, entity, .callback = SentrySetModelPre);
-        DHookEntity(g_DHookObjectGetMaxHealth, true, entity, .callback = ObjectGetMaxHealthPost);
-    }
-    else if(StrEqual(classname, "obj_dispenser"))
-    {
-        DHookEntity(g_DHookDispenserSetModel, false, entity, .callback = DispenserSetModelPre);
-        DHookEntity(g_DHookObjectGetMaxHealth, true, entity, .callback = ObjectGetMaxHealthPost);
-        DHookEntity(g_DHookGetHealRate, true, entity, .callback = DispenserGetHealRatePost);
-    }
-    else if(StrEqual(classname, "obj_teleporter"))
-    {
-        DHookEntity(g_DHookTeleporterSetModel, false, entity, .callback = TeleporterSetModelPre);
-        DHookEntity(g_DHookObjectGetMaxHealth, true, entity, .callback = ObjectGetMaxHealthPost);
-    }
-    else if(StrEqual(classname, "tf_projectile_sentryrocket"))
-    {
-        SDKHook(entity, SDKHook_SpawnPost, SentryRocketSpawnPost);
-    }
-}
-
-void SetupObjectDHooks(int building, TFObjectType type)
-{
-    DHookEntity(g_DHookObjectOnGoActive, true, building, .callback = ObjectOnGoActivePost);
-
-    if (type == TFObject_Dispenser)
-    {
-        DHookEntity(g_DHookDispenserStartHealing, true, building, .callback = DispenserStartHealingPost);
-    }
-}
-
-void SentryRocketSpawnPost(int rocket)
-{
-    int owner = GetEntPropEnt(rocket, Prop_Data, "m_hOwnerEntity");
-
-    int builder = GetEntPropEnt(owner, Prop_Send, "m_hBuilder");
-
-    if (IsValidClient(builder))
-	{
-		char sAttributes[256];
-		if(BuilderHasCustomAttributeString(builder, "custom sentry rocket model", sAttributes, sizeof(sAttributes)))
-		{
-			SetSentryRocketModel(rocket, sAttributes);
-		}
-	}
-    
-    return;
-}
-
-stock void SetSentryRocketModel(int entity, char[] attr)
-{
-	if (FileExistsAndLog(attr, true))
-    {
-        PrecacheModelAndLog(attr);
-        SetEntityModel(entity, attr);
-    }
-}
-
 /**
  * forward void TF2CA_OnBuildObject(int builder, int building, TFObjectType buildingtype)
  */
@@ -333,6 +325,16 @@ void OnBuildObject(Event event, const char[] name, bool dontBroadcast)
         {
             UpdateBuildingInfo(building, buildingtype, attr);
         }
+    }
+}
+
+void SetupObjectDHooks(int building, TFObjectType type)
+{
+    DHookEntity(g_DHookObjectOnGoActive, true, building, .callback = ObjectOnGoActivePost);
+
+    if (type == TFObject_Dispenser)
+    {
+        DHookEntity(g_DHookDispenserStartHealing, true, building, .callback = DispenserStartHealingPost);
     }
 }
 
@@ -377,6 +379,9 @@ void OnUpgradeObject(Event event, const char[] name, bool dontBroadcast)
     }
 }
 
+/**
+ * forward void TF2CA_OnCarryObject(int builder, int building, TFObjectType buildingtype);
+ */
 void OnCarryObject(Event event, const char[] name, bool dontBroadcast)
 {
     int builder = GetClientOfUserId(event.GetInt("userid"));
@@ -397,6 +402,9 @@ void OnCarryObject(Event event, const char[] name, bool dontBroadcast)
     Call_Finish();
 }
 
+/**
+ * forward void TF2CA_OnDropObject(int builder, int building, TFObjectType buildingtype);
+ */
 void OnDropObject(Event event, const char[] name, bool dontBroadcast)
 {
     int builder = GetClientOfUserId(event.GetInt("userid"));
@@ -490,6 +498,9 @@ void OnObjectDestroyed(Event event, const char[] name, bool dontBroadcast)
     Call_Finish();
 }
 
+/**
+ * forward void TF2CA_OnObjectDetonated(int builder, int building, TFObjectType buildingtype);
+ */
 void OnObjectDetonated(Event event, const char[] name, bool dontBroadcast)
 {
     int builder = GetClientOfUserId(event.GetInt("userid"));
@@ -510,6 +521,13 @@ void OnObjectDetonated(Event event, const char[] name, bool dontBroadcast)
     Call_Finish();
 }
 
+/////////////////////////////
+// DHooks                  //
+/////////////////////////////
+
+/**
+ * forward void TF2CA_ObjectOnGoActive(int builder, int building, TFObjectType buildingtype);
+ */
 MRESReturn ObjectOnGoActivePost(int building)
 {
     int builder = TF2_GetObjectBuilder(building);
@@ -525,6 +543,9 @@ MRESReturn ObjectOnGoActivePost(int building)
     return MRES_Ignored;
 }
 
+/**
+ * forward void TF2CA_DispenserStartHealing(int builder, int building, int patient);
+ */
 MRESReturn DispenserStartHealingPost(int building, Handle hParams)
 {
     int builder = TF2_GetObjectBuilder(building);
@@ -550,6 +571,9 @@ MRESReturn DispenserStartHealingPost(int building, Handle hParams)
     return MRES_Ignored;
 }
 
+/**
+ * forward void TF2CA_DispenserStopHealing(int builder, int building, int patient);
+ */
 MRESReturn OnDispenserStopHealingPost(int building, DHookParam hParams)
 {
     int builder = TF2_GetObjectBuilder(building);
@@ -583,21 +607,13 @@ MRESReturn GetConstructionMultiplierPost(int building, DHookReturn hReturn)
         return MRES_Ignored;
     }
 
-    int pda = GetPlayerWeaponSlot(builder, 3);
-    if (IsValidEntity(pda))
+    if (TF2_GetObjectType(building) == TFObject_Dispenser)
     {
-        if (TF2_GetObjectType(building) == TFObject_Dispenser)
-        {
-            float buildrate = TF2CustAttr_GetFloat(pda, "engineer dispenser build rate multiplier", 1.0);
-            if (buildrate >= 0 && buildrate != 1.0)
-            {
-                float returnvalue = DHookGetReturn(hReturn);
-                returnvalue *= buildrate;
-                DHookSetReturn(hReturn, returnvalue);
+        float returnvalue = DHookGetReturn(hReturn);
+        returnvalue = TF2CustAttr_HookValueFloatOnClient(returnvalue, "engineer dispenser build rate multiplier", builder);
+        DHookSetReturn(hReturn, returnvalue);
 
-                return MRES_Override;
-            }
-        }
+        return MRES_Override;
     }
 
     return MRES_Ignored;
@@ -701,19 +717,10 @@ MRESReturn DispenserGetHealRatePost(int building, DHookReturn hReturn)
         return MRES_Ignored;
     }
 
-    int pda = GetPlayerWeaponSlot(builder, 3);
-    if (IsValidEntity(pda))
-    {
-        if(TF2CustAttr_GetFloat(pda, "dispenser healrate multiplier", 1.0) != 1.0)
-        {
-            float healrate = DHookGetReturn(hReturn);
-            healrate *= TF2CustAttr_GetFloat(pda, "dispenser healrate multiplier");
-            DHookSetReturn(hReturn, healrate);
-            return MRES_Override;
-        }
-    }
-    
-    return MRES_Ignored;
+    float healrate = DHookGetReturn(hReturn);
+    healrate = TF2CustAttr_HookValueFloatOnClient(healrate, "dispenser healrate multiplier", builder);
+    DHookSetReturn(hReturn, healrate);
+    return MRES_Override;
 }
 
 #define SENTRY_BLUEPRINT_MODEL  "models/buildables/sentry1_blueprint.mdl"
@@ -734,7 +741,7 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
     }
 
     char newsentrymodel[128];
-    if (!BuilderHasCustomAttributeString(builder, "custom sentry model", newsentrymodel, sizeof(newsentrymodel)))
+    if (!TF2CustAttr_ClientHasString(builder, "custom sentry model", newsentrymodel, sizeof(newsentrymodel)))
     {
         return MRES_Ignored;
     }
@@ -840,7 +847,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
     }
 
     char newdispensermodel[128];
-    if (!BuilderHasCustomAttributeString(builder, "custom dispenser model", newdispensermodel, sizeof(newdispensermodel)))
+    if (!TF2CustAttr_ClientHasString(builder, "custom dispenser model", newdispensermodel, sizeof(newdispensermodel)))
     {
         return MRES_Ignored;
     }
@@ -943,7 +950,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
     }
 
     char newteleportermodel[128];
-    if (!BuilderHasCustomAttributeString(builder, "custom teleporter model", newteleportermodel, sizeof(newteleportermodel)))
+    if (!TF2CustAttr_ClientHasString(builder, "custom teleporter model", newteleportermodel, sizeof(newteleportermodel)))
     {
         return MRES_Ignored;
     }
@@ -998,23 +1005,6 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
     return MRES_Ignored;
 }
 
-stock bool BuilderHasCustomAttributeString(int client, const char[] check, char[] attr, int maxlength)
-{
-    for(int i = 0; i < 5; i++)
-    {
-        int weapon = GetPlayerWeaponSlot(client, i);
-        if(IsValidEntity(weapon))
-        {        
-            if(TF2CustAttr_GetString(weapon, check, attr, maxlength))
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
 MRESReturn OnCalculateObjectCostPost(Address pThis, DHookReturn hReturn, DHookParam hParams) {
     int iCost = DHookGetReturn(hReturn);
     
@@ -1027,20 +1017,12 @@ MRESReturn OnCalculateObjectCostPost(Address pThis, DHookReturn hReturn, DHookPa
     if (IsValidEntity(pda))
     {
         if (type == 0)
-        {
-            float costmult = TF2CustAttr_GetFloat(pda, "mod dispenser cost");
-            if (costmult != 1.0 && costmult > 0.0)
-            {
-                returncost = iCost * costmult;
-            }
+        {        
+            returncost = TF2CustAttr_HookValueFloatOnClient(returncost, "mod dispenser cost", builder);
         }
         else if (type == 2)
         {
-            float costmult = TF2CustAttr_GetFloat(pda, "mod sentry cost");
-            if (costmult != 1.0 && costmult > 0.0)
-            {
-                returncost = iCost * costmult;
-            }
+            returncost = TF2CustAttr_HookValueFloatOnClient(returncost, "mod sentry cost", builder);
         }
     }
 
@@ -1048,6 +1030,10 @@ MRESReturn OnCalculateObjectCostPost(Address pThis, DHookReturn hReturn, DHookPa
     
     return MRES_ChangedOverride;
 }
+
+/////////////////////////////
+// Native                  //
+/////////////////////////////
 
 int Native_BuilderHasCustomDispenser(Handle plugin, int nParams)
 {
@@ -1123,8 +1109,76 @@ int Native_DestroyScreens(Handle plugin, int nParams)
     return SDKCall(g_SDKCallBuildingDestroyScreens, building);
 }
 
-public void UpdateBuildingInfo(int ent, TFObjectType type, const char[] attr) {
-    int level = GetEntProp(ent, Prop_Send, "m_iUpgradeLevel");
+/////////////////////////////
+// Stock                   //
+/////////////////////////////
+
+stock void SetSentryRocketModel(int entity, char[] attr)
+{
+	if (FileExistsAndLog(attr, true))
+    {
+        PrecacheModelAndLog(attr);
+        SetEntityModel(entity, attr);
+    }
+}
+
+stock bool TF2CustAttr_ClientHasString(int client, const char[] check, char[] attr, int maxlength)
+{
+    for(int i = 0; i < 5; i++)
+    {
+        int weapon = GetPlayerWeaponSlot(client, i);
+        if(IsValidEntity(weapon))
+        {        
+            if(TF2CustAttr_GetString(weapon, check, attr, maxlength))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+stock float TF2CustAttr_HookValueFloatOnClient(float flInitial, const char[] customAttr, int iEntity, float defaultValue = 1.0)
+{
+    for(int i = 0; i < 5; i++)
+    {
+        int weapon = GetPlayerWeaponSlot(iEntity, i);
+        if(IsValidEntity(weapon))
+        {
+            if(TF2CustAttr_GetFloat(weapon, customAttr, defaultValue) >= 0.0)
+            {
+                flInitial *= TF2CustAttr_GetFloat(weapon, customAttr, defaultValue);
+            }
+        }
+    }
+    
+    return flInitial;
+}
+
+stock bool IsValidClient(int client, bool replaycheck=true)
+{
+	if(client<=0 || client>MaxClients)
+		return false;
+
+	if(!IsClientInGame(client))
+		return false;
+
+	if(GetEntProp(client, Prop_Send, "m_bIsCoaching"))
+		return false;
+
+	if(replaycheck && (IsClientSourceTV(client) || IsClientReplay(client)))
+		return false;
+
+	return true;
+}
+
+/////////////////////////////
+// Utility                 //
+/////////////////////////////
+
+void UpdateBuildingInfo(int building, TFObjectType type, const char[] attr) {
+    int level = GetEntProp(building, Prop_Send, "m_iUpgradeLevel");
 
     switch(type) {
         case TFObject_Sentry: {
@@ -1136,7 +1190,7 @@ public void UpdateBuildingInfo(int ent, TFObjectType type, const char[] attr) {
                 iSentryMetalRequired[2] = ReadIntVar(attr, "sentry2", 400);
                 iSentryMetalRequired[3] = ReadIntVar(attr, "sentry3", 600);
                 
-                SetEntProp(ent, Prop_Send, "m_iUpgradeMetalRequired", iSentryMetalRequired[level]);
+                SetEntProp(building, Prop_Send, "m_iUpgradeMetalRequired", iSentryMetalRequired[level]);
             }
         }
         case TFObject_Dispenser: {
@@ -1148,22 +1202,10 @@ public void UpdateBuildingInfo(int ent, TFObjectType type, const char[] attr) {
                 iDispenserMetalRequired[2] = ReadIntVar(attr, "dispenser2", 400);
                 iDispenserMetalRequired[3] = ReadIntVar(attr, "dispenser3", 600);
                 
-                SetEntProp(ent, Prop_Send, "m_iUpgradeMetalRequired", iDispenserMetalRequired[level]);
+                SetEntProp(building, Prop_Send, "m_iUpgradeMetalRequired", iDispenserMetalRequired[level]);
             }
         }
     }
-}
-
-/**
- * Detonate all buildings belonging to a player
- * 
- * @param client     Player to check against
- * @param type       Type of building to destroy
- * @param mode       Mode of building to destroy
- * @param silent     Destroy buildings silently
- */
-void DetonateObjectOfType(int client, int type, int mode = 0, bool silent = false) {
-	SDKCall(g_SDKCallDetonateObjectOfType, client, type, mode, silent);
 }
 
 bool FileExistsAndLog(const char[] path, bool use_valve_fs = false,
@@ -1188,19 +1230,14 @@ int PrecacheModelAndLog(const char[] model, bool preload = false) {
 	return modelIndex;
 }
 
-stock bool IsValidClient(int client, bool replaycheck=true)
-{
-	if(client<=0 || client>MaxClients)
-		return false;
-
-	if(!IsClientInGame(client))
-		return false;
-
-	if(GetEntProp(client, Prop_Send, "m_bIsCoaching"))
-		return false;
-
-	if(replaycheck && (IsClientSourceTV(client) || IsClientReplay(client)))
-		return false;
-
-	return true;
+/**
+ * Detonate all buildings belonging to a player
+ * 
+ * @param client     Player to check against
+ * @param type       Type of building to destroy
+ * @param mode       Mode of building to destroy
+ * @param silent     Destroy buildings silently
+ */
+void DetonateObjectOfType(int client, int type, int mode = 0, bool silent = false) {
+	SDKCall(g_SDKCallDetonateObjectOfType, client, type, mode, silent);
 }

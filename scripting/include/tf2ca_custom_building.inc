@@ -150,6 +150,40 @@ forward void TF2CA_DispenserStartHealing(int builder, int building, int patient)
  */
 forward void TF2CA_DispenserStopHealing(int builder, int building, int patient);
 
+stock bool TF2CustAttr_ClientHasString(int client, const char[] check, char[] attr, int maxlength)
+{
+    for(int i = 0; i < 5; i++)
+    {
+        int weapon = GetPlayerWeaponSlot(client, i);
+        if(IsValidEntity(weapon))
+        {        
+            if(TF2CustAttr_GetString(weapon, check, attr, maxlength))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+stock float TF2CustAttr_HookValueFloatOnClient(float flInitial, const char[] customAttr, int iEntity, float defaultValue = 1.0)
+{
+    for(int i = 0; i < 5; i++)
+    {
+        int weapon = GetPlayerWeaponSlot(iEntity, i);
+        if(IsValidEntity(weapon))
+        {
+            if(TF2CustAttr_GetFloat(weapon, customAttr, defaultValue) >= 0.0)
+            {
+                flInitial *= TF2CustAttr_GetFloat(weapon, customAttr, defaultValue);
+            }
+        }
+    }
+    
+    return flInitial;
+}
+
 public SharedPlugin __pl_tf2ca_custom_building = {
 	name = "tf2ca_custom_building",
 	file = "tf2ca_custom_building.smx",
