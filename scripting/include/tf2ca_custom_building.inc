@@ -4,6 +4,8 @@
 #endif
 #define _tf2ca_custom_building_included_
 
+#include <tf_custom_attributes>
+
 /**
  * Check if the player has the same value as the entered value.
  * 
