@@ -4,6 +4,7 @@
 #endif
 #define _tf2ca_custom_building_included_
 
+#include <tf2_stocks>
 #include <tf_custom_attributes>
 
 /**
