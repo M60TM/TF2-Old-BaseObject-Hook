@@ -4,21 +4,6 @@
 	{
 		"Functions"
 		{
-			"CBaseTrigger::EndTouch()"
-			{
-				"offset"		"CBaseTrigger::EndTouch()"
-				"hooktype"		"entity"
-				"return"		"void"
-				"this"			"entity"
-				
-				"arguments"
-				{
-					"pOther"
-					{
-						"type"	"cbaseentity"
-					}
-				}
-			}
 			"CObjectSentrygun::SetModel()"
 			{
 				"offset"		"CObjectSentrygun::SetModel()"
@@ -199,11 +184,6 @@
 
 		"Offsets"
 		{
-			"CBaseTrigger::EndTouch()"
-			{
-				"windows"	"105"
-				"linux"		"106"
-			}
 			"CObjectSentrygun::SetModel()"
 			{
 				"windows"	"26"
