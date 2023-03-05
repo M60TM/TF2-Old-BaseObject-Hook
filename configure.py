@@ -8,13 +8,17 @@ plugins = [
 # files to copy to builddir, relative to root
 # plugin names from previous list will be copied automatically
 copy_files = [
-	'gamedata/tf2.cattr_object.txt'
+	'gamedata/tf2.cattr_object.txt',
+	'scripting/include/tf2ca_custom_building.inc',
+	'scripting/building_test/cwa_amp_rewrite.sp',
+	'scripting/building_test/cwa_speedpad.sp'
 ]
 
 # additional directories for sourcepawn include lookup
 # `scripting/include` is explicitly included
 include_dirs = [
-	# 'third_party/vendored'
+	'third_party/submodules',
+	'third_party/vendored'
 ]
 
 # required version of spcomp (presumably pinned to SM version)
