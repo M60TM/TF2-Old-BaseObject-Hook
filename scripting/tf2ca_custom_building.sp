@@ -198,6 +198,11 @@ void SentryRocketSpawnPost(int rocket)
 {
     int owner = GetEntPropEnt(rocket, Prop_Data, "m_hOwnerEntity");
 
+    if (!HasEntProp(owner, Prop_Send, "m_hBuilder"))
+    {
+        return;
+    }
+
     int builder = GetEntPropEnt(owner, Prop_Send, "m_hBuilder");
 
     if (IsValidClient(builder))
