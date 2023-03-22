@@ -9,6 +9,7 @@
 
 #include <tf2utils>
 #include <tf_custom_attributes>
+#include <tf2ca_stocks>
 #include <stocksoup/functions>
 #include <stocksoup/tf/entity_prop_stocks>
 #include <stocksoup/var_strings>
@@ -1125,40 +1126,6 @@ stock void SetSentryRocketModel(int entity, char[] attr)
         PrecacheModelAndLog(attr);
         SetEntityModel(entity, attr);
     }
-}
-
-stock bool TF2CustAttr_ClientHasString(int client, const char[] check, char[] attr, int maxlength)
-{
-    for(int i = 0; i < 5; i++)
-    {
-        int weapon = GetPlayerWeaponSlot(client, i);
-        if(IsValidEntity(weapon))
-        {        
-            if(TF2CustAttr_GetString(weapon, check, attr, maxlength))
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-stock float TF2CustAttr_HookValueFloatOnClient(float flInitial, const char[] customAttr, int iEntity, float defaultValue = 1.0)
-{
-    for(int i = 0; i < 5; i++)
-    {
-        int weapon = GetPlayerWeaponSlot(iEntity, i);
-        if(IsValidEntity(weapon))
-        {
-            if(TF2CustAttr_GetFloat(weapon, customAttr, defaultValue) >= 0.0)
-            {
-                flInitial *= TF2CustAttr_GetFloat(weapon, customAttr, defaultValue);
-            }
-        }
-    }
-    
-    return flInitial;
 }
 
 stock bool IsValidClient(int client, bool replaycheck=true)

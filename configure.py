@@ -10,6 +10,7 @@ plugins = [
 copy_files = [
 	'gamedata/tf2.cattr_object.txt',
 	'scripting/include/tf2ca_custom_building.inc',
+	'scripting/include/tf2ca_stocks.inc',
 	'scripting/building_test/cwa_amp_rewrite.sp',
 	'scripting/building_test/cwa_speedpad.sp'
 ]
