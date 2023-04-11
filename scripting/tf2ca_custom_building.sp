@@ -22,7 +22,7 @@ public Plugin myinfo = {
 	name = "[TF2] Custom Attribute: Custom Building",
 	author = "Sandy and Monera",
 	description = "A few native and custom attributes, forwards for handling custom building.",
-	version = "1.2.0",
+	version = "1.3.0",
 	url = "https://github.com/M60TM/TF2CA-Custom-Building"
 }
 
@@ -191,7 +191,6 @@ public void OnEntityCreated(int entity, const char[] classname)
     {
         DHookEntity(g_DHookSentrySetModel, false, entity, .callback = SentrySetModelPre);
         DHookEntity(g_DHookObjectGetMaxHealth, true, entity, .callback = ObjectGetMaxHealthPost);
-        SDKHook(entity, SDKHook_SpawnPost, SentrySpawnPost);
     }
     else if(StrEqual(classname, "obj_dispenser"))
     {
@@ -208,24 +207,6 @@ public void OnEntityCreated(int entity, const char[] classname)
     {
         SDKHook(entity, SDKHook_SpawnPost, SentryRocketSpawnPost);
     }
-}
-
-void SentrySpawnPost(int sentry)
-{
-    int builder = GetEntPropEnt(sentry, Prop_Send, "m_hBuilder");
-
-    if (IsValidClient(builder))
-	{
-        float MaxAmmoShells = float(GetMaxAmmoShells(sentry));
-        MaxAmmoShells = TF2CustAttr_HookValueFloatOnClient(MaxAmmoShells, "mult sentry shell ammo", builder);
-        SetMaxAmmoShells(sentry, RoundFloat(MaxAmmoShells));
-
-        float MaxAmmoRockets = float(GetMaxAmmoRockets(sentry));
-        MaxAmmoRockets = TF2CustAttr_HookValueFloatOnClient(MaxAmmoRockets, "mult sentry rocket ammo", builder);
-        SetMaxAmmoRockets(sentry, RoundFloat(MaxAmmoRockets));
-    }
-
-    return;
 }
 
 void SentryRocketSpawnPost(int rocket)
@@ -1179,26 +1160,6 @@ int Native_DestroyScreens(Handle plugin, int nParams)
 /////////////////////////////
 // Stock                   //
 /////////////////////////////
-
-stock int GetMaxAmmoShells(int sentry)
-{
-	return GetEntData(sentry, FindSendPropInfo("CObjectSentrygun", "m_iAmmoShells") + 4);
-}
-
-stock void SetMaxAmmoShells(int sentry, int ammo)
-{
-	SetEntData(sentry, FindSendPropInfo("CObjectSentrygun", "m_iAmmoShells") + 4, ammo);
-}
-
-stock int GetMaxAmmoRockets(int sentry)
-{
-	return GetEntData(sentry, FindSendPropInfo("CObjectSentrygun", "m_iAmmoRockets") + 4);
-}
-
-stock void SetMaxAmmoRockets(int sentry, int ammo)
-{
-	SetEntData(sentry, FindSendPropInfo("CObjectSentrygun", "m_iAmmoRockets") + 4, ammo);
-}
 
 stock void SetSentryRocketModel(int entity, char[] attr)
 {
