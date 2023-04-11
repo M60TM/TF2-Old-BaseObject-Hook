@@ -30,17 +30,17 @@ public void TF2CA_DispenserStartHealing(int builder, int building, int patient)
 	{
         if (patient != -1)
         {
-            TF2_AddCondition(patient, TFCond_Buffed, TFCondDuration_Infinite, builder);
+            TF2_AddCondition(patient, TFCond_Buffed, TFCondDuration_Infinite, building);
         }
     }
 }
 
 public void TF2CA_DispenserStopHealing(int builder, int building, int patient)
 {
-    if (patient != -1 && builder != -1)
+    if (patient != -1)
     {
         if (TF2_IsPlayerInCondition(patient, TFCond_Buffed) 
-                && TF2Util_GetPlayerConditionProvider(patient, TFCond_Buffed) == builder)
+                && TF2Util_GetPlayerConditionProvider(patient, TFCond_Buffed) == building)
         {
             TF2_RemoveCondition(patient, TFCond_Buffed);
         }

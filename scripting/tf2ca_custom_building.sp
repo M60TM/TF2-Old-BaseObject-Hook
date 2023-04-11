@@ -38,6 +38,8 @@ Handle g_OnObjectRemovedForward;
 Handle g_OnObjectDestroyedForward;
 Handle g_OnObjectDetonatedForward;
 Handle g_ObjectOnGoActiveForward;
+Handle g_ObjectStartUpgradingForward;
+Handle g_ObjectFinishUpgradingForward;
 Handle g_DispenserStartHealingForward;
 Handle g_DispenserStopHealingForward;
 
@@ -54,6 +56,8 @@ Handle g_SDKCallPlayerGetObjectOfType;
 /////////////////////////////
 
 Handle g_DHookObjectOnGoActive;
+Handle g_DHookObjectStartUpgrading;
+Handle g_DHookObjectFinishUpgrading;
 Handle g_DHookDispenserStartHealing;
 Handle g_DHookObjectGetMaxHealth;
 Handle g_DHookSentrySetModel;
@@ -104,6 +108,10 @@ public void OnPluginStart()
     g_SDKCallBuildingDestroyScreens = EndPrepSDKCall();
     
     g_DHookObjectOnGoActive = DHookCreateFromConf(hGameConf, "CBaseObject::OnGoActive()");
+
+    g_DHookObjectStartUpgrading = DHookCreateFromConf(hGameConf, "CBaseObject::StartUpgrading()");
+    g_DHookObjectFinishUpgrading = DHookCreateFromConf(hGameConf, "CBaseObject::FinishUpgrading()");
+
     g_DHookDispenserStartHealing = DHookCreateFromConf(hGameConf, "CObjectDispenser::StartHealing()");
 
     g_DHookObjectGetMaxHealth = DHookCreateFromConf(hGameConf, "CBaseObject::GetMaxHealthForCurrentLevel()");
@@ -148,6 +156,12 @@ public void OnPluginStart()
 
     g_ObjectOnGoActiveForward = CreateGlobalForward("TF2CA_ObjectOnGoActive", ET_Event, Param_Cell,
 			Param_Cell, Param_Cell);
+    
+    g_ObjectStartUpgradingForward = CreateGlobalForward("TF2CA_ObjectStartUpgrading", ET_Event, Param_Cell,
+			Param_Cell, Param_Cell);
+
+    g_ObjectFinishUpgradingForward = CreateGlobalForward("TF2CA_ObjectFinishUpgrading", ET_Event, Param_Cell,
+			Param_Cell, Param_Cell);
 
     g_DispenserStartHealingForward = CreateGlobalForward("TF2CA_DispenserStartHealing", ET_Event, Param_Cell,
 			Param_Cell, Param_Cell);
@@ -177,6 +191,7 @@ public void OnEntityCreated(int entity, const char[] classname)
     {
         DHookEntity(g_DHookSentrySetModel, false, entity, .callback = SentrySetModelPre);
         DHookEntity(g_DHookObjectGetMaxHealth, true, entity, .callback = ObjectGetMaxHealthPost);
+        SDKHook(entity, SDKHook_SpawnPost, SentrySpawnPost);
     }
     else if(StrEqual(classname, "obj_dispenser"))
     {
@@ -193,6 +208,24 @@ public void OnEntityCreated(int entity, const char[] classname)
     {
         SDKHook(entity, SDKHook_SpawnPost, SentryRocketSpawnPost);
     }
+}
+
+void SentrySpawnPost(int sentry)
+{
+    int builder = GetEntPropEnt(sentry, Prop_Send, "m_hBuilder");
+
+    if (IsValidClient(builder))
+	{
+        float MaxAmmoShells = float(GetMaxAmmoShells(sentry));
+        MaxAmmoShells = TF2CustAttr_HookValueFloatOnClient(MaxAmmoShells, "mult sentry shell ammo", builder);
+        SetMaxAmmoShells(sentry, RoundFloat(MaxAmmoShells));
+
+        float MaxAmmoRockets = float(GetMaxAmmoRockets(sentry));
+        MaxAmmoRockets = TF2CustAttr_HookValueFloatOnClient(MaxAmmoRockets, "mult sentry rocket ammo", builder);
+        SetMaxAmmoRockets(sentry, RoundFloat(MaxAmmoRockets));
+    }
+
+    return;
 }
 
 void SentryRocketSpawnPost(int rocket)
@@ -337,6 +370,8 @@ void OnBuildObject(Event event, const char[] name, bool dontBroadcast)
 void SetupObjectDHooks(int building, TFObjectType type)
 {
     DHookEntity(g_DHookObjectOnGoActive, true, building, .callback = ObjectOnGoActivePost);
+    DHookEntity(g_DHookObjectStartUpgrading, true, building, .callback = ObjectStartUpgradingPost);
+    DHookEntity(g_DHookObjectFinishUpgrading, true, building, .callback = ObjectFinishUpgradingPost);
 
     if (type == TFObject_Dispenser)
     {
@@ -547,6 +582,36 @@ MRESReturn ObjectOnGoActivePost(int building)
     Call_Finish();
 
     return MRES_Ignored;
+}
+
+MRESReturn ObjectStartUpgradingPost(int building)
+{
+    int builder = TF2_GetObjectBuilder(building);
+    
+    TFObjectType buildingtype = TF2_GetObjectType(building);
+    
+    Call_StartForward(g_ObjectStartUpgradingForward);
+    Call_PushCell(builder);
+    Call_PushCell(building);
+    Call_PushCell(buildingtype);
+    Call_Finish();
+
+    return MRES_Handled;
+}
+
+MRESReturn ObjectFinishUpgradingPost(int building)
+{
+    int builder = TF2_GetObjectBuilder(building);
+    
+    TFObjectType buildingtype = TF2_GetObjectType(building);
+    
+    Call_StartForward(g_ObjectFinishUpgradingForward);
+    Call_PushCell(builder);
+    Call_PushCell(building);
+    Call_PushCell(buildingtype);
+    Call_Finish();
+
+    return MRES_Handled;
 }
 
 /**
@@ -1018,18 +1083,14 @@ MRESReturn OnCalculateObjectCostPost(Address pThis, DHookReturn hReturn, DHookPa
 
     int type = DHookGetParam(hParams, 2);
 
-    int pda = GetPlayerWeaponSlot(builder, 3);
-    float returncost = iCost * 1.0;
-    if (IsValidEntity(pda))
+    float returncost = float(iCost);
+    if (type == 0)
+    {        
+        returncost = TF2CustAttr_HookValueFloatOnClient(returncost, "mod dispenser cost", builder);
+    }
+    else if (type == 2)
     {
-        if (type == 0)
-        {        
-            returncost = TF2CustAttr_HookValueFloatOnClient(returncost, "mod dispenser cost", builder);
-        }
-        else if (type == 2)
-        {
-            returncost = TF2CustAttr_HookValueFloatOnClient(returncost, "mod sentry cost", builder);
-        }
+        returncost = TF2CustAttr_HookValueFloatOnClient(returncost, "mod sentry cost", builder);
     }
 
     DHookSetReturn(hReturn, RoundFloat(returncost));
@@ -1118,6 +1179,26 @@ int Native_DestroyScreens(Handle plugin, int nParams)
 /////////////////////////////
 // Stock                   //
 /////////////////////////////
+
+stock int GetMaxAmmoShells(int sentry)
+{
+	return GetEntData(sentry, FindSendPropInfo("CObjectSentrygun", "m_iAmmoShells") + 4);
+}
+
+stock void SetMaxAmmoShells(int sentry, int ammo)
+{
+	SetEntData(sentry, FindSendPropInfo("CObjectSentrygun", "m_iAmmoShells") + 4, ammo);
+}
+
+stock int GetMaxAmmoRockets(int sentry)
+{
+	return GetEntData(sentry, FindSendPropInfo("CObjectSentrygun", "m_iAmmoRockets") + 4);
+}
+
+stock void SetMaxAmmoRockets(int sentry, int ammo)
+{
+	SetEntData(sentry, FindSendPropInfo("CObjectSentrygun", "m_iAmmoRockets") + 4, ammo);
+}
 
 stock void SetSentryRocketModel(int entity, char[] attr)
 {

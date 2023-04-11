@@ -204,6 +204,16 @@
 				"windows"	"372"
 				"linux"		"374"
 			}
+			"CBaseObject::StartUpgrading()"
+			{
+				"windows"	"383"
+				"linux"		"384"
+			}
+			"CBaseObject::FinishUpgrading()"
+			{
+				"windows"	"384"
+				"linux"		"385"
+			}
 			"CBaseObject::GetMaxHealthForCurrentLevel()"
 			{
 				"windows"	"390"
