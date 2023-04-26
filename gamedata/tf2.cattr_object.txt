@@ -216,7 +216,7 @@
 			}
 			"CBaseObject::GetMaxHealthForCurrentLevel()"
 			{
-				"windows"	"390"
+				"windows"	"391"
 				"linux"		"392"
 			}
 			"CObjectDispenser::StartHealing()"
