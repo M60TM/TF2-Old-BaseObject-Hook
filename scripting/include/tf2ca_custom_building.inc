@@ -4,7 +4,12 @@
 #endif
 #define _tf2ca_custom_building_included_
 
+#include <dhooks>
 #include <tf2_stocks>
+
+/////////////////////////////
+// Native                  //
+/////////////////////////////
 
 /**
  * Check if the player has the same value as the entered value.
@@ -55,6 +60,10 @@ native int TF2CA_PlayerGetObjectOfType(int owner, int objectType, int objectMode
  * @param building     Building index to destroy screen.
  */
 native void TF2CA_DestroyScreens(int building);
+
+/////////////////////////////
+// Forward                 //
+/////////////////////////////
 
 /**
  * Called When player build an object.
@@ -167,8 +176,18 @@ forward void TF2CA_DispenserStartHealing(int builder, int building, int patient)
  * @param builder
  * @param building
  * @param patient
+ * @return
  */
-forward void TF2CA_DispenserStopHealing(int builder, int building, int patient);
+forward MRESReturn TF2CA_DispenserStopHealing(int builder, int building, int patient);
+
+/**
+ * Called When dispenser stop healing.
+ * 
+ * @param builder
+ * @param building
+ * @param patient
+ */
+forward void TF2CA_DispenserStopHealingPost(int builder, int building, int patient);
 
 public SharedPlugin __pl_tf2ca_custom_building = {
 	name = "tf2ca_custom_building",

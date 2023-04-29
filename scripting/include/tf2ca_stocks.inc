@@ -24,6 +24,22 @@ stock bool TF2CustAttr_ClientHasString(int client, const char[] check, char[] at
     return false;
 }
 
+stock int TF2CustAttr_HookValueStringOnClient(int client, const char[] customAttr, char[] attr, int maxlength, const char[] initial)
+{
+    int writtenBytes = 0;
+
+    for (int i = 0; i < 5; i++)
+    {
+        int weapon = GetPlayerWeaponSlot(client, i);
+        if (IsValidEntity(weapon))
+        {
+            writtenBytes = TF2CustAttr_GetString(weapon, customAttr, attr, maxlength, initial);
+        }
+    }
+
+    return writtenBytes;
+}
+
 stock float TF2CustAttr_HookValueFloatOnClient(float flInitial, const char[] customAttr, int entity, float defaultValue = 1.0)
 {
     for(int i = 0; i < 5; i++)
