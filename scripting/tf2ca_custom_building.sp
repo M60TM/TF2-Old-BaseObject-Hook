@@ -42,6 +42,8 @@ GlobalForward g_OnObjectRemovedForward;
 GlobalForward g_OnObjectDestroyedForward;
 GlobalForward g_OnObjectDetonatedForward;
 
+GlobalForward g_OnSentrySoundForward;
+
 /////////////////////////////
 // SDKCall                 //
 /////////////////////////////
@@ -106,8 +108,7 @@ public void OnPluginStart()
 
 	g_OnObjectRemovedForward = CreateGlobalForward("TF2CA_OnObjectRemoved", ET_Event, Param_Cell, Param_Cell, Param_Cell);
 
-	g_OnObjectDestroyedForward = CreateGlobalForward("TF2CA_OnObjectDestroyed", ET_Event, Param_Cell, Param_Cell, Param_Cell,
-																				Param_Cell, Param_Cell, Param_Cell, Param_Cell);
+	g_OnObjectDestroyedForward = CreateGlobalForward("TF2CA_OnObjectDestroyed", ET_Event, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
 
 	g_OnObjectDetonatedForward = CreateGlobalForward("TF2CA_OnObjectDetonated", ET_Event, Param_Cell, Param_Cell, Param_Cell);
 
@@ -122,6 +123,11 @@ public void OnPluginStart()
 	g_DispenserStopHealingPreForward = CreateGlobalForward("TF2CA_DispenserStopHealing", ET_Hook, Param_Cell, Param_Cell, Param_Cell);
 
 	g_DispenserStopHealingPostForward = CreateGlobalForward("TF2CA_DispenserStopHealingPost", ET_Event, Param_Cell, Param_Cell, Param_Cell);
+
+	g_OnSentrySoundForward = CreateGlobalForward("TF2CA_SentryEmitSound", ET_Hook, Param_Cell, Param_Cell, Param_String, Param_CellByRef, Param_FloatByRef,
+			Param_CellByRef, Param_CellByRef, Param_CellByRef, Param_String, Param_CellByRef);
+
+	AddNormalSoundHook(HookSound);
 }
 
 public void OnMapStart()
@@ -172,6 +178,43 @@ void SentryRocketSpawnPost(int rocket)
 	}
 
 	return;
+}
+
+Action HookSound(int clients[MAXPLAYERS], int &numClients, char sample[PLATFORM_MAX_PATH],
+	int &entity, int &channel, float &volume, int &level, int &pitch, int &flags,
+	char soundEntry[PLATFORM_MAX_PATH], int &seed)
+{
+	if (!IsValidEntity(entity))
+		return Plugin_Continue;
+
+	static char classname[64];
+	GetEntityClassname(entity, classname, sizeof(classname));
+	if (StrContains(classname, "obj_sentrygun", true) != -1)
+	{
+		int builder = TF2_GetObjectBuilder(entity);
+		if (!IsValidClient(builder))
+		{
+			return Plugin_Continue;
+		}
+		
+		Call_StartForward(g_OnSentrySoundForward);
+		Call_PushCell(entity);
+		Call_PushCell(builder);
+		Call_PushStringEx(sample, PLATFORM_MAX_PATH, SM_PARAM_STRING_UTF8 | SM_PARAM_STRING_COPY, SM_PARAM_COPYBACK);
+		Call_PushCellRef(channel);
+		Call_PushFloatRef(volume);
+		Call_PushCellRef(level);
+		Call_PushCellRef(pitch);
+		Call_PushCellRef(flags);
+		Call_PushStringEx(soundEntry, PLATFORM_MAX_PATH, SM_PARAM_STRING_UTF8|SM_PARAM_STRING_COPY, SM_PARAM_COPYBACK);
+		Call_PushCellRef(seed);
+		Action result;
+		Call_Finish(result);
+
+		return result;
+	}
+	
+	return Plugin_Continue;
 }
 
 /////////////////////////////
@@ -270,7 +313,7 @@ void OnBuildObject(Event event, const char[] name, bool dontBroadcast)
 		builder = -1;
 	}
 
-	int	building = event.GetInt("index");
+	int building = event.GetInt("index");
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 
@@ -305,7 +348,7 @@ void OnUpgradeObject(Event event, const char[] name, bool dontBroadcast)
 
 	int building = event.GetInt("index");
 
-	int builder	 = TF2_GetObjectBuilder(building);
+	int builder = TF2_GetObjectBuilder(building);
 
 	if (!IsValidClient(builder))
 	{
@@ -323,7 +366,7 @@ void OnUpgradeObject(Event event, const char[] name, bool dontBroadcast)
 
 	if (builder != -1)
 	{
-		int	 wrench = GetPlayerWeaponSlot(builder, 2);
+		int wrench = GetPlayerWeaponSlot(builder, 2);
 		char attr[256];
 		if (TF2CustAttr_GetString(wrench, "building upgrade cost", attr, sizeof(attr)))
 		{
@@ -344,7 +387,7 @@ void OnCarryObject(Event event, const char[] name, bool dontBroadcast)
 		builder = -1;
 	}
 
-	int	building = event.GetInt("index");
+	int building = event.GetInt("index");
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 
@@ -367,7 +410,7 @@ void OnDropObject(Event event, const char[] name, bool dontBroadcast)
 		builder = -1;
 	}
 
-	int	building = event.GetInt("index");
+	int building = event.GetInt("index");
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 
@@ -390,7 +433,7 @@ void OnObjectRemoved(Event event, const char[] name, bool dontBroadcast)
 		builder = -1;
 	}
 
-	int	building = event.GetInt("index");
+	int building = event.GetInt("index");
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 
@@ -434,7 +477,7 @@ void OnObjectDestroyed(Event event, const char[] name, bool dontBroadcast)
 		weapon = -1;
 	}
 
-	int	building = event.GetInt("index");
+	int building = event.GetInt("index");
 
 	bool wasbuilding = event.GetBool("was_building");
 
@@ -463,7 +506,7 @@ void OnObjectDetonated(Event event, const char[] name, bool dontBroadcast)
 		builder = -1;
 	}
 
-	int	building = event.GetInt("index");
+	int building = event.GetInt("index");
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 

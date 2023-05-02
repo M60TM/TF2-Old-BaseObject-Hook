@@ -189,6 +189,25 @@ forward MRESReturn TF2CA_DispenserStopHealing(int builder, int building, int pat
  */
 forward void TF2CA_DispenserStopHealingPost(int builder, int building, int patient);
 
+/**
+ * Called When sentrygun emits sound.
+ * 
+ * @param sentry		sentry index.
+ * @param builder		builder index.
+ * @param sample        Sound file name relative to the "sound" folder.
+ * @param channel       Channel emitting the sound.
+ * @param volume        Sound volume.
+ * @param level         Sound level.
+ * @param pitch         Sound pitch.
+ * @param flags         Sound flags.
+ * @param soundEntry    Game sound entry name. (Used in engines newer than Portal 2)
+ * @param seed          Sound seed. (Used in engines newer than Portal 2)
+ * @return
+ */
+forward Action TF2CA_SentryEmitSound(int sentry, int builder, char sample[PLATFORM_MAX_PATH],
+	int &channel, float &volume, int &level, int &pitch, int &flags,
+	char soundEntry[PLATFORM_MAX_PATH], int &seed);
+
 public SharedPlugin __pl_tf2ca_custom_building = {
 	name = "tf2ca_custom_building",
 	file = "tf2ca_custom_building.smx",
