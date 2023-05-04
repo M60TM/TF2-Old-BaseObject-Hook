@@ -392,7 +392,7 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 	{
 		if (FileExists(newSentryModel, true))
 		{
-			PrecacheModelAndLog(newSentryModel);
+			PrecacheModel(newSentryModel);
 			DHookSetParamString(hParams, 1, newSentryModel);
 
 			return MRES_ChangedHandled;
@@ -406,7 +406,7 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 		StrCat(newSentryModel, PLATFORM_MAX_PATH, "1_blueprint.mdl");
 		if (FileExists(newSentryModel, true))
 		{
-			PrecacheModelAndLog(newSentryModel);
+			PrecacheModel(newSentryModel);
 			DHookSetParamString(hParams, 1, newSentryModel);
 
 			return MRES_ChangedHandled;
@@ -415,9 +415,9 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 	else if (StrEqual(oldsentrymodel, SENTRY_LV1_MODEL))
 	{
 		StrCat(newSentryModel, PLATFORM_MAX_PATH, "1.mdl");
-		if (FileExistsAndLog(newSentryModel, true))
+		if (FileExists(newSentryModel, true))
 		{
-			PrecacheModelAndLog(newSentryModel);
+			PrecacheModel(newSentryModel);
 			DHookSetParamString(hParams, 1, newSentryModel);
 
 			return MRES_ChangedHandled;
@@ -426,9 +426,9 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 	else if (StrEqual(oldsentrymodel, SENTRY_LV1_HEAVY_MODEL))
 	{
 		StrCat(newSentryModel, PLATFORM_MAX_PATH, "1_heavy.mdl");
-		if (FileExistsAndLog(newSentryModel, true))
+		if (FileExists(newSentryModel, true))
 		{
-			PrecacheModelAndLog(newSentryModel);
+			PrecacheModel(newSentryModel);
 			DHookSetParamString(hParams, 1, newSentryModel);
 
 			return MRES_ChangedHandled;
@@ -437,9 +437,9 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 	else if (StrEqual(oldsentrymodel, SENTRY_LV2_MODEL))
 	{
 		StrCat(newSentryModel, PLATFORM_MAX_PATH, "2.mdl");
-		if (FileExistsAndLog(newSentryModel, true))
+		if (FileExists(newSentryModel, true))
 		{
-			PrecacheModelAndLog(newSentryModel);
+			PrecacheModel(newSentryModel);
 			DHookSetParamString(hParams, 1, newSentryModel);
 
 			return MRES_ChangedHandled;
@@ -448,9 +448,9 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 	else if (StrEqual(oldsentrymodel, SENTRY_LV2_HEAVY_MODEL))
 	{
 		StrCat(newSentryModel, PLATFORM_MAX_PATH, "2_heavy.mdl");
-		if (FileExistsAndLog(newSentryModel, true))
+		if (FileExists(newSentryModel, true))
 		{
-			PrecacheModelAndLog(newSentryModel);
+			PrecacheModel(newSentryModel);
 			DHookSetParamString(hParams, 1, newSentryModel);
 
 			return MRES_ChangedHandled;
@@ -459,9 +459,9 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 	else if (StrEqual(oldsentrymodel, SENTRY_LV3_MODEL))
 	{
 		StrCat(newSentryModel, PLATFORM_MAX_PATH, "3.mdl");
-		if (FileExistsAndLog(newSentryModel, true))
+		if (FileExists(newSentryModel, true))
 		{
-			PrecacheModelAndLog(newSentryModel);
+			PrecacheModel(newSentryModel);
 			DHookSetParamString(hParams, 1, newSentryModel);
 
 			return MRES_ChangedHandled;
@@ -470,9 +470,9 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 	else if (StrEqual(oldsentrymodel, SENTRY_LV3_HEAVY_MODEL))
 	{
 		StrCat(newSentryModel, PLATFORM_MAX_PATH, "3_heavy.mdl");
-		if (FileExistsAndLog(newSentryModel, true))
+		if (FileExists(newSentryModel, true))
 		{
-			PrecacheModelAndLog(newSentryModel);
+			PrecacheModel(newSentryModel);
 			DHookSetParamString(hParams, 1, newSentryModel);
 
 			return MRES_ChangedHandled;
@@ -509,7 +509,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 	{
 		if (FileExists(newDispenserModel, true))
 		{
-			PrecacheModelAndLog(newDispenserModel);
+			PrecacheModel(newDispenserModel);
 			DHookSetParamString(hParams, 1, newDispenserModel);
 
 			return MRES_ChangedHandled;
@@ -527,7 +527,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		StrCat(newDispenserModel, PLATFORM_MAX_PATH, "_blueprint.mdl");
 		if (FileExists(newDispenserModel, true))
 		{
-			PrecacheModelAndLog(newDispenserModel);
+			PrecacheModel(newDispenserModel);
 			DHookSetParamString(hParams, 1, newDispenserModel);
 
 			return MRES_ChangedHandled;
@@ -536,9 +536,9 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 	else if (StrEqual(oldDispenserModel, DISPENSER_LV1_LIGHT_MODEL))
 	{
 		StrCat(newDispenserModel, PLATFORM_MAX_PATH, "_light.mdl");
-		if (FileExistsAndLog(newDispenserModel, true))
+		if (FileExists(newDispenserModel, true))
 		{
-			PrecacheModelAndLog(newDispenserModel);
+			PrecacheModel(newDispenserModel);
 			DHookSetParamString(hParams, 1, newDispenserModel);
 
 			return MRES_ChangedHandled;
@@ -549,7 +549,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		StrCat(newDispenserModel, PLATFORM_MAX_PATH, ".mdl");
 		if (FileExists(newDispenserModel, true))
 		{
-			PrecacheModelAndLog(newDispenserModel);
+			PrecacheModel(newDispenserModel);
 			DHookSetParamString(hParams, 1, newDispenserModel);
 
 			return MRES_ChangedHandled;
@@ -560,7 +560,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		StrCat(newDispenserModel, PLATFORM_MAX_PATH, "_lvl2_light.mdl");
 		if (FileExists(newDispenserModel, true))
 		{
-			PrecacheModelAndLog(newDispenserModel);
+			PrecacheModel(newDispenserModel);
 			DHookSetParamString(hParams, 1, newDispenserModel);
 
 			return MRES_ChangedHandled;
@@ -571,7 +571,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 			StrCat(newDispenserModel, PLATFORM_MAX_PATH, "_light.mdl");
 			if (FileExists(newDispenserModel, true))
 			{
-				PrecacheModelAndLog(newDispenserModel);
+				PrecacheModel(newDispenserModel);
 				DHookSetParamString(hParams, 1, newDispenserModel);
 
 				return MRES_ChangedHandled;
@@ -583,7 +583,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		StrCat(newDispenserModel, PLATFORM_MAX_PATH, "_lvl2.mdl");
 		if (FileExists(newDispenserModel, true))
 		{
-			PrecacheModelAndLog(newDispenserModel);
+			PrecacheModel(newDispenserModel);
 			DHookSetParamString(hParams, 1, newDispenserModel);
 
 			return MRES_ChangedHandled;
@@ -594,7 +594,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 			StrCat(newDispenserModel, PLATFORM_MAX_PATH, ".mdl");
 			if (FileExists(newDispenserModel, true))
 			{
-				PrecacheModelAndLog(newDispenserModel);
+				PrecacheModel(newDispenserModel);
 				DHookSetParamString(hParams, 1, newDispenserModel);
 
 				return MRES_ChangedHandled;
@@ -606,7 +606,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		StrCat(newDispenserModel, PLATFORM_MAX_PATH, "_lvl3_light.mdl");
 		if (FileExists(newDispenserModel, true))
 		{
-			PrecacheModelAndLog(newDispenserModel);
+			PrecacheModel(newDispenserModel);
 			DHookSetParamString(hParams, 1, newDispenserModel);
 
 			return MRES_ChangedHandled;
@@ -617,7 +617,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 			StrCat(newDispenserModel, PLATFORM_MAX_PATH, "_light.mdl");
 			if (FileExists(newDispenserModel, true))
 			{
-				PrecacheModelAndLog(newDispenserModel);
+				PrecacheModel(newDispenserModel);
 				DHookSetParamString(hParams, 1, newDispenserModel);
 
 				return MRES_ChangedHandled;
@@ -629,7 +629,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		StrCat(newDispenserModel, PLATFORM_MAX_PATH, "_lvl3.mdl");
 		if (FileExists(newDispenserModel, true))
 		{
-			PrecacheModelAndLog(newDispenserModel);
+			PrecacheModel(newDispenserModel);
 			DHookSetParamString(hParams, 1, newDispenserModel);
 
 			return MRES_ChangedHandled;
@@ -640,7 +640,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 			StrCat(newDispenserModel, PLATFORM_MAX_PATH, ".mdl");
 			if (FileExists(newDispenserModel, true))
 			{
-				PrecacheModelAndLog(newDispenserModel);
+				PrecacheModel(newDispenserModel);
 				DHookSetParamString(hParams, 1, newDispenserModel);
 
 				return MRES_ChangedHandled;
@@ -676,7 +676,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 	{
 		if (FileExists(newteleportermodel, true))
 		{
-			PrecacheModelAndLog(newteleportermodel);
+			PrecacheModel(newteleportermodel);
 			DHookSetParamString(hParams, 1, newteleportermodel);
 
 			return MRES_ChangedHandled;
@@ -695,7 +695,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 		StrCat(newteleportermodel, sizeof(newteleportermodel), "_blueprint_enter.mdl");
 		if (FileExists(newteleportermodel, true))
 		{
-			PrecacheModelAndLog(newteleportermodel);
+			PrecacheModel(newteleportermodel);
 			DHookSetParamString(hParams, 1, newteleportermodel);
 
 			return MRES_ChangedHandled;
@@ -706,7 +706,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 			StrCat(newteleportermodel, PLATFORM_MAX_PATH, "_blueprint.mdl");
 			if (FileExists(newteleportermodel, true))
 			{
-				PrecacheModelAndLog(newteleportermodel);
+				PrecacheModel(newteleportermodel);
 				DHookSetParamString(hParams, 1, newteleportermodel);
 
 				return MRES_ChangedHandled;
@@ -718,7 +718,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 		StrCat(newteleportermodel, PLATFORM_MAX_PATH, "_blueprint_exit.mdl");
 		if (FileExists(newteleportermodel, true))
 		{
-			PrecacheModelAndLog(newteleportermodel);
+			PrecacheModel(newteleportermodel);
 			DHookSetParamString(hParams, 1, newteleportermodel);
 
 			return MRES_ChangedHandled;
@@ -729,7 +729,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 			StrCat(newteleportermodel, PLATFORM_MAX_PATH, "_blueprint.mdl");
 			if (FileExists(newteleportermodel, true))
 			{
-				PrecacheModelAndLog(newteleportermodel);
+				PrecacheModel(newteleportermodel);
 				DHookSetParamString(hParams, 1, newteleportermodel);
 
 				return MRES_ChangedHandled;
@@ -741,7 +741,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 		StrCat(newteleportermodel, PLATFORM_MAX_PATH, "_light.mdl");
 		if (FileExists(newteleportermodel, true))
 		{
-			PrecacheModelAndLog(newteleportermodel);
+			PrecacheModel(newteleportermodel);
 			DHookSetParamString(hParams, 1, newteleportermodel);
 
 			return MRES_ChangedHandled;
@@ -752,7 +752,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 		StrCat(newteleportermodel, PLATFORM_MAX_PATH, ".mdl");
 		if (FileExists(newteleportermodel, true))
 		{
-			PrecacheModelAndLog(newteleportermodel);
+			PrecacheModel(newteleportermodel);
 			DHookSetParamString(hParams, 1, newteleportermodel);
 
 			return MRES_ChangedHandled;
@@ -764,13 +764,13 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 
 MRESReturn OnCalculateObjectCostPost(Address pThis, DHookReturn hReturn, DHookParam hParams)
 {
-	int	  iCost		 = DHookGetReturn(hReturn);
+	int cost = DHookGetReturn(hReturn);
 
-	int	  builder	 = DHookGetParam(hParams, 1);
+	int builder = DHookGetParam(hParams, 1);
 
-	int	  type		 = DHookGetParam(hParams, 2);
+	int	type = DHookGetParam(hParams, 2);
 
-	float returncost = float(iCost);
+	float returncost = float(cost);
 	if (type == 0)
 	{
 		returncost = TF2CustAttr_HookValueFloatOnClient(returncost, "mod dispenser cost", builder);

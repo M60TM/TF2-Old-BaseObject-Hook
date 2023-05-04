@@ -52,8 +52,6 @@ Handle		g_SDKCallDetonateObjectOfType;
 Handle		g_SDKCallBuildingDestroyScreens;
 Handle		g_SDKCallPlayerGetObjectOfType;
 
-StringMap	g_MissingModels;
-
 public APLRes AskPluginLoad2(Handle self, bool late, char[] error, int maxlen)
 {
 	RegPluginLibrary("tf2ca_custom_building");
@@ -140,9 +138,6 @@ public void OnMapStart()
 	HookEvent("object_removed", OnObjectRemoved);
 	HookEvent("object_destroyed", OnObjectDestroyed);
 	HookEvent("object_detonated", OnObjectDetonated);
-
-	delete g_MissingModels;
-	g_MissingModels = new StringMap();
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
@@ -607,9 +602,9 @@ int Native_DestroyScreens(Handle plugin, int nParams)
 
 stock void SetSentryRocketModel(int entity, char[] attr)
 {
-	if (FileExistsAndLog(attr, true))
+	if (FileExists(attr, true))
 	{
-		PrecacheModelAndLog(attr);
+		PrecacheModel(attr);
 		SetEntityModel(entity, attr);
 	}
 }
@@ -668,32 +663,6 @@ void UpdateBuildingInfo(int building, TFObjectType type, const char[] attr)
 			}
 		}
 	}
-}
-
-bool FileExistsAndLog(const char[] path, bool use_valve_fs = false, const char[] valve_path_id = "GAME")
-{
-	if (FileExists(path, use_valve_fs, valve_path_id))
-	{
-		return true;
-	}
-
-	any discarded;
-	if (!g_MissingModels.GetValue(path, discarded))
-	{
-		LogError("Missing file '%s'", path);
-		g_MissingModels.SetValue(path, true);
-	}
-	return false;
-}
-
-int PrecacheModelAndLog(const char[] model, bool preload = false)
-{
-	int modelIndex = PrecacheModel(model, preload);
-	if (!modelIndex)
-	{
-		LogError("Failed to precache model '%s'", model);
-	}
-	return modelIndex;
 }
 
 void DetonateObjectOfType(int client, int type, int mode = 0, bool silent = false)
