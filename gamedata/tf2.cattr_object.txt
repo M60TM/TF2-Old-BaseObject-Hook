@@ -4,43 +4,12 @@
 	{
 		"Functions"
 		{
-			"CObjectSentrygun::SetModel()"
+			"CBaseObject::SetModel()"
 			{
-				"offset"		"CObjectSentrygun::SetModel()"
+				"offset"		"CBaseObject::SetModel()"
 				"hooktype"		"entity"
 				"return"		"void"
 				"this"			"entity"
-
-				"arguments"
-				{
-					"pModel"
-					{
-						"type"	"charptr"
-					}
-				}
-			}
-			"CObjectDispenser::SetModel()"
-			{
-				"offset"		"CObjectDispenser::SetModel()"
-				"hooktype"		"entity"
-				"return"		"void"
-				"this"			"entity"
-
-				"arguments"
-				{
-					"pModel"
-					{
-						"type"	"charptr"
-					}
-				}
-			}
-			"CObjectTeleporter::SetModel()"
-			{
-				"offset"		"CObjectTeleporter::SetModel()"
-				"hooktype"		"entity"
-				"return"		"void"
-				"this"			"entity"
-
 				"arguments"
 				{
 					"pModel"
@@ -83,7 +52,6 @@
 				"callconv"		"thiscall"
 				"return"		"void"
 				"this"			"entity"
-				
 				"arguments"
 				{
 					"pOther"
@@ -98,7 +66,6 @@
 				"hooktype"		"entity"
 				"return"		"void"
 				"this"			"entity"
-				
 				"arguments"
 				{
 					"pOther"
@@ -138,6 +105,20 @@
 				"hooktype"		"entity"
 				"return"		"float"
 				"this"			"entity"
+			}
+			"CObjectDispenser::CouldHealTarget"
+			{
+				"signature"	"CObjectDispenser::CouldHealTarget"
+				"callconv"	"thiscall"
+				"return"	"bool"
+				"this"		"entity"
+				"arguments"
+				{
+					"target"
+					{
+						"type"	"cbaseentity"
+					}
+				}
 			}
 		}
 
@@ -180,21 +161,17 @@
 				"windows" "\x55\x8B\xEC\x83\xEC\x0C\x53\x8B\xD9\x89\x5D\xF8"
 				"linux"   "@_ZN11CBaseObject25GetConstructionMultiplierEv"
 			}
+			"CObjectDispenser::CouldHealTarget"
+			{
+				"library"	"server"
+				"linux"		"@_ZN16CObjectDispenser15CouldHealTargetEP11CBaseEntity"
+				"windows"	"\x55\x8B\xEC\x56\x8B\x75\x08\x57\x8B\xF9\x8B\x87\x38\x01\x00\x00"
+			}
 		}
 
 		"Offsets"
 		{
-			"CObjectSentrygun::SetModel()"
-			{
-				"windows"	"26"
-				"linux"		"27"
-			}
-			"CObjectDispenser::SetModel()"
-			{
-				"windows"	"26"
-				"linux"		"27"
-			}
-			"CObjectTeleporter::SetModel()"
+			"CBaseObject::SetModel()"
 			{
 				"windows"	"26"
 				"linux"		"27"

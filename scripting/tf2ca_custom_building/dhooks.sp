@@ -2,18 +2,18 @@
 #pragma newdecls required
 
 /////////////////////////////
-// Forward                 //
+// Forward Define          //
 /////////////////////////////
 
-GlobalForward g_ObjectOnGoActiveForward;
-GlobalForward g_ObjectStartUpgradingForward;
-GlobalForward g_ObjectFinishUpgradingForward;
-GlobalForward g_DispenserStartHealingForward;
-GlobalForward g_DispenserStopHealingPreForward;
-GlobalForward g_DispenserStopHealingPostForward;
+static GlobalForward g_ObjectOnGoActiveForward;
+static GlobalForward g_ObjectStartUpgradingForward;
+static GlobalForward g_ObjectFinishUpgradingForward;
+static GlobalForward g_DispenserStartHealingForward;
+static GlobalForward g_DispenserStopHealingForward;
+static GlobalForward g_DispenserCouldHealTargetForward;
 
 /////////////////////////////
-// DHooks                  //
+// DHooks Define           //
 /////////////////////////////
 
 static DynamicHook g_DHookObjectOnGoActive;
@@ -21,93 +21,81 @@ static DynamicHook g_DHookObjectStartUpgrading;
 static DynamicHook g_DHookObjectFinishUpgrading;
 static DynamicHook g_DHookDispenserStartHealing;
 static DynamicHook g_DHookObjectGetMaxHealth;
-static DynamicHook g_DHookSentrySetModel;
-static DynamicHook g_DHookDispenserSetModel;
-static DynamicHook g_DHookTeleporterSetModel;
+static DynamicHook g_DHookObjectSetModel;
 static DynamicHook g_DHookGetHealRate;
 
-public void Setup_DHook(GameData hGameConf)
+/////////////////////////////
+// Setup Stuffs            //
+/////////////////////////////
+
+public void Setup_DHook(GameData data)
 {
-	g_DHookObjectOnGoActive		 = DHookCreateDynamicHook(hGameConf, "CBaseObject::OnGoActive()");
-	g_DHookObjectStartUpgrading	 = DHookCreateDynamicHook(hGameConf, "CBaseObject::StartUpgrading()");
-	g_DHookObjectFinishUpgrading = DHookCreateDynamicHook(hGameConf, "CBaseObject::FinishUpgrading()");
+	Setup_DHook_Forwards();
+	
+	g_DHookObjectOnGoActive = GetDHooksHookDefinition(data, "CBaseObject::OnGoActive()");
+	g_DHookObjectStartUpgrading = GetDHooksHookDefinition(data, "CBaseObject::StartUpgrading()");
+	g_DHookObjectFinishUpgrading = GetDHooksHookDefinition(data, "CBaseObject::FinishUpgrading()");
+	g_DHookObjectGetMaxHealth = GetDHooksHookDefinition(data, "CBaseObject::GetMaxHealthForCurrentLevel()");
 
-	g_DHookDispenserStartHealing = DHookCreateDynamicHook(hGameConf, "CObjectDispenser::StartHealing()");
+	g_DHookObjectSetModel = GetDHooksHookDefinition(data, "CBaseObject::SetModel()");
 
-	g_DHookObjectGetMaxHealth	 = DHookCreateDynamicHook(hGameConf, "CBaseObject::GetMaxHealthForCurrentLevel()");
+	g_DHookDispenserStartHealing = GetDHooksHookDefinition(data, "CObjectDispenser::StartHealing()");
+	g_DHookGetHealRate = GetDHooksHookDefinition(data, "CObjectDispenser::GetHealRate()");
 
-	g_DHookSentrySetModel		 = DHookCreateDynamicHook(hGameConf, "CObjectSentrygun::SetModel()");
-	g_DHookDispenserSetModel	 = DHookCreateDynamicHook(hGameConf, "CObjectDispenser::SetModel()");
-	g_DHookTeleporterSetModel	 = DHookCreateDynamicHook(hGameConf, "CObjectTeleporter::SetModel()");
-
-	g_DHookGetHealRate			 = DHookCreateDynamicHook(hGameConf, "CObjectDispenser::GetHealRate()");
-
-	DHookSetupDynamicDetour(hGameConf, "CTFPlayerShared::CalculateObjectCost()", .postCallback = OnCalculateObjectCostPost);
-	DHookSetupDynamicDetour(hGameConf, "CObjectDispenser::StopHealing()", OnDispenserStopHealingPre, OnDispenserStopHealingPost);
-	DHookSetupDynamicDetour(hGameConf, "CBaseObject::GetConstructionMultiplier()", .postCallback = GetConstructionMultiplierPost);
+	DynamicDetour DynDetourCalculateObjectCost = GetDHooksDetourDefinition(data, "CTFPlayerShared::CalculateObjectCost()");
+	DynDetourCalculateObjectCost.Enable(Hook_Post, DynDetour_CalculateObjectCostPost);
+	DynamicDetour DynDetourStopHealing = GetDHooksDetourDefinition(data, "CObjectDispenser::StopHealing()");
+	DynDetourStopHealing.Enable(Hook_Post, DynDetour_DispenserStopHealingPost);
+	DynamicDetour DynDetourGetConstructionMultiplier = GetDHooksDetourDefinition(data, "CBaseObject::GetConstructionMultiplier()");
+	DynDetourGetConstructionMultiplier.Enable(Hook_Post, DynDetour_GetConstructionMultiplierPost);
+	DynamicDetour DynDetourCouldHealTarget = GetDHooksDetourDefinition(data, "CObjectDispenser::CouldHealTarget");
+	DynDetourCouldHealTarget.Enable(Hook_Pre, DynDetour_CouldHealTargetPre);
 }
 
-void DHookSetupDynamicDetour(GameData gamedata, const char[] name, DHookCallback preCallback = INVALID_FUNCTION, DHookCallback postCallback = INVALID_FUNCTION)
+void Setup_DHook_Forwards()
 {
-	DynamicDetour detour = DynamicDetour.FromConf(gamedata, name);
+	g_ObjectOnGoActiveForward = new GlobalForward("TF2CA_ObjectOnGoActive", ET_Event, Param_Cell, Param_Cell, Param_Cell);
 
-	if (detour)
-	{
-		if (preCallback != INVALID_FUNCTION && !DHookEnableDetour(detour, false, preCallback))
-			LogError("[Gamedata] Failed to enable pre detour: %s", name);
+	g_ObjectStartUpgradingForward = new GlobalForward("TF2CA_ObjectStartUpgrading", ET_Event, Param_Cell, Param_Cell, Param_Cell);
 
-		if (postCallback != INVALID_FUNCTION && !DHookEnableDetour(detour, true, postCallback))
-			LogError("[Gamedata] Failed to enable post detour: %s", name);
+	g_ObjectFinishUpgradingForward = new GlobalForward("TF2CA_ObjectFinishUpgrading", ET_Event, Param_Cell, Param_Cell, Param_Cell);
 
-		delete detour;
-	}
-	else
-	{
-		LogError("[Gamedata] Could not find %s", name);
-	}
+	g_DispenserStartHealingForward = new GlobalForward("TF2CA_DispenserStartHealing", ET_Event, Param_Cell, Param_Cell, Param_Cell);
+
+	g_DispenserStopHealingForward = new GlobalForward("TF2CA_DispenserStopHealing", ET_Event, Param_Cell, Param_Cell, Param_Cell);
+
+	g_DispenserCouldHealTargetForward = new GlobalForward("TF2CA_DispenserCouldHealTarget", ET_Hook, Param_Cell, Param_Cell, Param_Cell, Param_CellByRef);
 }
 
-static DynamicHook DHookCreateDynamicHook(GameData gamedata, const char[] name)
+void OnObjectCreated(int entity, const char[] classname)
 {
-	DynamicHook hook = DynamicHook.FromConf(gamedata, name);
-	if (!hook)
-	{
-		LogError("Failed to create %s DynamicHook", name);
-	}
-
-	return hook;
-}
-
-public void OnObjectCreated(int entity, const char[] classname)
-{
-	DHookEntity(g_DHookObjectOnGoActive, true, entity, .callback = ObjectOnGoActivePost);
-	DHookEntity(g_DHookObjectStartUpgrading, true, entity, .callback = ObjectStartUpgradingPost);
-	DHookEntity(g_DHookObjectFinishUpgrading, true, entity, .callback = ObjectFinishUpgradingPost);
-	DHookEntity(g_DHookObjectGetMaxHealth, true, entity, .callback = ObjectGetMaxHealthPost);
+	g_DHookObjectOnGoActive.HookEntity(Hook_Post, entity, DHook_ObjectOnGoActivePost);
+	g_DHookObjectStartUpgrading.HookEntity(Hook_Post, entity, DHook_ObjectStartUpgradingPost);
+	g_DHookObjectFinishUpgrading.HookEntity(Hook_Post, entity, DHook_ObjectFinishUpgradingPost);
+	g_DHookObjectGetMaxHealth.HookEntity(Hook_Post, entity, DHook_ObjectGetMaxHealthPost);
 
 	if (StrEqual(classname, "obj_sentrygun"))
 	{
-		DHookEntity(g_DHookSentrySetModel, false, entity, .callback = SentrySetModelPre);
+		g_DHookObjectSetModel.HookEntity(Hook_Pre, entity, SentrySetModelPre);
 	}
 	else if (StrEqual(classname, "obj_dispenser"))
 	{
-		DHookEntity(g_DHookDispenserStartHealing, true, entity, .callback = DispenserStartHealingPost);
-		DHookEntity(g_DHookDispenserSetModel, false, entity, .callback = DispenserSetModelPre);
-		DHookEntity(g_DHookGetHealRate, true, entity, .callback = DispenserGetHealRatePost);
+		g_DHookObjectSetModel.HookEntity(Hook_Pre, entity, DispenserSetModelPre);
+		g_DHookDispenserStartHealing.HookEntity(Hook_Post, entity, DHook_DispenserStartHealingPost);
+		g_DHookGetHealRate.HookEntity(Hook_Post, entity, DispenserGetHealRatePost);
 	}
 	else if (StrEqual(classname, "obj_teleporter"))
 	{
-		DHookEntity(g_DHookTeleporterSetModel, false, entity, .callback = TeleporterSetModelPre);
-		DHookEntity(g_DHookObjectGetMaxHealth, true, entity, .callback = ObjectGetMaxHealthPost);
+		g_DHookObjectSetModel.HookEntity(Hook_Pre, entity, TeleporterSetModelPre);
 	}
 }
 
 /**
  * forward void TF2CA_ObjectOnGoActive(int builder, int building, TFObjectType buildingtype);
  */
-MRESReturn ObjectOnGoActivePost(int building)
+MRESReturn DHook_ObjectOnGoActivePost(int building)
 {
-	int			 builder	  = TF2_GetObjectBuilder(building);
+	int builder = TF2_GetObjectBuilder(building);
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 
@@ -120,7 +108,7 @@ MRESReturn ObjectOnGoActivePost(int building)
 	return MRES_Ignored;
 }
 
-MRESReturn ObjectStartUpgradingPost(int building)
+MRESReturn DHook_ObjectStartUpgradingPost(int building)
 {
 	int	builder	= TF2_GetObjectBuilder(building);
 
@@ -135,7 +123,7 @@ MRESReturn ObjectStartUpgradingPost(int building)
 	return MRES_Handled;
 }
 
-MRESReturn ObjectFinishUpgradingPost(int building)
+MRESReturn DHook_ObjectFinishUpgradingPost(int building)
 {
 	int	builder	= TF2_GetObjectBuilder(building);
 
@@ -150,110 +138,7 @@ MRESReturn ObjectFinishUpgradingPost(int building)
 	return MRES_Handled;
 }
 
-/**
- * forward void TF2CA_DispenserStartHealing(int builder, int building, int patient);
- */
-MRESReturn DispenserStartHealingPost(int building, Handle hParams)
-{
-	int builder = TF2_GetObjectBuilder(building);
-
-	if (!IsValidClient(builder))
-	{
-		builder = -1;
-	}
-
-	int patient = DHookGetParam(hParams, 1);
-
-	if (!IsValidClient(patient))
-	{
-		patient = -1;
-	}
-
-	Call_StartForward(g_DispenserStartHealingForward);
-	Call_PushCell(builder);
-	Call_PushCell(building);
-	Call_PushCell(patient);
-	Call_Finish();
-
-	return MRES_Ignored;
-}
-
-MRESReturn OnDispenserStopHealingPre(int building, DHookParam hParams)
-{
-	int builder = TF2_GetObjectBuilder(building);
-
-	if (!IsValidClient(builder))
-	{
-		builder = -1;
-	}
-
-	int patient = DHookGetParam(hParams, 1);
-
-	if (!IsValidClient(patient))
-	{
-		patient = -1;
-	}
-
-	Call_StartForward(g_DispenserStopHealingPreForward);
-	Call_PushCell(builder);
-	Call_PushCell(building);
-	Call_PushCell(patient);
-
-	MRESReturn result;
-	Call_Finish(result);
-
-	return result;
-}
-
-/**
- * forward void TF2CA_DispenserStopHealing(int builder, int building, int patient);
- */
-MRESReturn OnDispenserStopHealingPost(int building, DHookParam hParams)
-{
-	int builder = TF2_GetObjectBuilder(building);
-
-	if (!IsValidClient(builder))
-	{
-		builder = -1;
-	}
-
-	int patient = DHookGetParam(hParams, 1);
-
-	if (!IsValidClient(patient))
-	{
-		patient = -1;
-	}
-
-	Call_StartForward(g_DispenserStopHealingPostForward);
-	Call_PushCell(builder);
-	Call_PushCell(building);
-	Call_PushCell(patient);
-	Call_Finish();
-
-	return MRES_Ignored;
-}
-
-MRESReturn GetConstructionMultiplierPost(int building, DHookReturn hReturn)
-{
-	int builder = TF2_GetObjectBuilder(building);
-	if (!IsValidClient(builder))
-	{
-		return MRES_Ignored;
-	}
-
-	if (TF2_GetObjectType(building) == TFObject_Dispenser)
-	{
-		float returnvalue = DHookGetReturn(hReturn);
-		returnvalue		  = TF2CustAttr_HookValueFloatOnClient(returnvalue, "engineer dispenser build rate multiplier", builder);
-		DHookSetReturn(hReturn, returnvalue);
-
-		return MRES_Override;
-	}
-
-	return MRES_Ignored;
-}
-
-MRESReturn ObjectGetMaxHealthPost(int building, DHookReturn hReturn)
+MRESReturn DHook_ObjectGetMaxHealthPost(int building, DHookReturn hReturn)
 {
 	int builder = TF2_GetObjectBuilder(building);
 	if (!IsValidClient(builder))
@@ -262,7 +147,7 @@ MRESReturn ObjectGetMaxHealthPost(int building, DHookReturn hReturn)
 	}
 
 	int wrench = GetPlayerWeaponSlot(builder, 2);
-	int level  = GetEntProp(building, Prop_Send, "m_iUpgradeLevel");
+	int level = GetEntProp(building, Prop_Send, "m_iUpgradeLevel");
 
 	if (IsValidEntity(wrench))
 	{
@@ -280,17 +165,17 @@ MRESReturn ObjectGetMaxHealthPost(int building, DHookReturn hReturn)
 						{
 							case 1:
 							{
-								DHookSetReturn(hReturn, ReadIntVar(attr, "sentry1", 150));
+								hReturn.Value = ReadIntVar(attr, "sentry1", 150);
 								return MRES_ChangedOverride;
 							}
 							case 2:
 							{
-								DHookSetReturn(hReturn, ReadIntVar(attr, "sentry2", 180));
+								hReturn.Value = ReadIntVar(attr, "sentry2", 180);
 								return MRES_ChangedOverride;
 							}
 							case 3:
 							{
-								DHookSetReturn(hReturn, ReadIntVar(attr, "sentry3", 216));
+								hReturn.Value = ReadIntVar(attr, "sentry3", 216);
 								return MRES_ChangedOverride;
 							}
 						}
@@ -304,17 +189,17 @@ MRESReturn ObjectGetMaxHealthPost(int building, DHookReturn hReturn)
 						{
 							case 1:
 							{
-								DHookSetReturn(hReturn, ReadIntVar(attr, "dispenser1", 150));
+								hReturn.Value = ReadIntVar(attr, "dispenser1", 150);
 								return MRES_ChangedOverride;
 							}
 							case 2:
 							{
-								DHookSetReturn(hReturn, ReadIntVar(attr, "dispenser2", 180));
+								hReturn.Value = ReadIntVar(attr, "dispenser2", 180);
 								return MRES_ChangedOverride;
 							}
 							case 3:
 							{
-								DHookSetReturn(hReturn, ReadIntVar(attr, "dispenser3", 216));
+								hReturn.Value = ReadIntVar(attr, "dispenser3", 216);
 								return MRES_ChangedOverride;
 							}
 						}
@@ -328,17 +213,17 @@ MRESReturn ObjectGetMaxHealthPost(int building, DHookReturn hReturn)
 						{
 							case 1:
 							{
-								DHookSetReturn(hReturn, ReadIntVar(attr, "teleporter1", 150));
+								hReturn.Value = ReadIntVar(attr, "teleporter1", 150);
 								return MRES_ChangedOverride;
 							}
 							case 2:
 							{
-								DHookSetReturn(hReturn, ReadIntVar(attr, "teleporter2", 180));
+								hReturn.Value = ReadIntVar(attr, "teleporter2", 180);
 								return MRES_ChangedOverride;
 							}
 							case 3:
 							{
-								DHookSetReturn(hReturn, ReadIntVar(attr, "teleporter3", 216));
+								hReturn.Value = ReadIntVar(attr, "teleporter3", 216);
 								return MRES_ChangedOverride;
 							}
 						}
@@ -349,20 +234,6 @@ MRESReturn ObjectGetMaxHealthPost(int building, DHookReturn hReturn)
 	}
 
 	return MRES_Ignored;
-}
-
-MRESReturn DispenserGetHealRatePost(int building, DHookReturn hReturn)
-{
-	int builder = TF2_GetObjectBuilder(building);
-	if (!IsValidClient(builder))
-	{
-		return MRES_Ignored;
-	}
-
-	float healrate = DHookGetReturn(hReturn);
-	healrate	   = TF2CustAttr_HookValueFloatOnClient(healrate, "dispenser healrate multiplier", builder);
-	DHookSetReturn(hReturn, healrate);
-	return MRES_Override;
 }
 
 #define SENTRY_BLUEPRINT_MODEL "models/buildables/sentry1_blueprint.mdl"
@@ -393,21 +264,21 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 		if (FileExists(newSentryModel, true))
 		{
 			PrecacheModel(newSentryModel);
-			DHookSetParamString(hParams, 1, newSentryModel);
+			hParams.SetString(1, newSentryModel);
 
 			return MRES_ChangedHandled;
 		}
 	}
 
 	char oldsentrymodel[PLATFORM_MAX_PATH];
-	DHookGetParamString(hParams, 1, oldsentrymodel, sizeof(oldsentrymodel));
+	hParams.GetString(1, oldsentrymodel, sizeof(oldsentrymodel));
 	if (StrEqual(oldsentrymodel, SENTRY_BLUEPRINT_MODEL))
 	{
 		StrCat(newSentryModel, PLATFORM_MAX_PATH, "1_blueprint.mdl");
 		if (FileExists(newSentryModel, true))
 		{
 			PrecacheModel(newSentryModel);
-			DHookSetParamString(hParams, 1, newSentryModel);
+			hParams.SetString(1, newSentryModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -418,7 +289,7 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 		if (FileExists(newSentryModel, true))
 		{
 			PrecacheModel(newSentryModel);
-			DHookSetParamString(hParams, 1, newSentryModel);
+			hParams.SetString(1, newSentryModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -429,7 +300,7 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 		if (FileExists(newSentryModel, true))
 		{
 			PrecacheModel(newSentryModel);
-			DHookSetParamString(hParams, 1, newSentryModel);
+			hParams.SetString(1, newSentryModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -440,7 +311,7 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 		if (FileExists(newSentryModel, true))
 		{
 			PrecacheModel(newSentryModel);
-			DHookSetParamString(hParams, 1, newSentryModel);
+			hParams.SetString(1, newSentryModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -451,7 +322,7 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 		if (FileExists(newSentryModel, true))
 		{
 			PrecacheModel(newSentryModel);
-			DHookSetParamString(hParams, 1, newSentryModel);
+			hParams.SetString(1, newSentryModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -462,7 +333,7 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 		if (FileExists(newSentryModel, true))
 		{
 			PrecacheModel(newSentryModel);
-			DHookSetParamString(hParams, 1, newSentryModel);
+			hParams.SetString(1, newSentryModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -473,7 +344,7 @@ MRESReturn SentrySetModelPre(int building, DHookParam hParams)
 		if (FileExists(newSentryModel, true))
 		{
 			PrecacheModel(newSentryModel);
-			DHookSetParamString(hParams, 1, newSentryModel);
+			hParams.SetString(1, newSentryModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -510,14 +381,14 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newDispenserModel, true))
 		{
 			PrecacheModel(newDispenserModel);
-			DHookSetParamString(hParams, 1, newDispenserModel);
+			hParams.SetString(1, newDispenserModel);
 
 			return MRES_ChangedHandled;
 		}
 	}
 
 	char oldDispenserModel[PLATFORM_MAX_PATH];
-	DHookGetParamString(hParams, 1, oldDispenserModel, sizeof(oldDispenserModel));
+	hParams.GetString(1, oldDispenserModel, sizeof(oldDispenserModel));
 
 	char dispenserModel[128];
 	strcopy(dispenserModel, sizeof(dispenserModel), newDispenserModel);
@@ -528,7 +399,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newDispenserModel, true))
 		{
 			PrecacheModel(newDispenserModel);
-			DHookSetParamString(hParams, 1, newDispenserModel);
+			hParams.SetString(1, newDispenserModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -539,7 +410,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newDispenserModel, true))
 		{
 			PrecacheModel(newDispenserModel);
-			DHookSetParamString(hParams, 1, newDispenserModel);
+			hParams.SetString(1, newDispenserModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -550,7 +421,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newDispenserModel, true))
 		{
 			PrecacheModel(newDispenserModel);
-			DHookSetParamString(hParams, 1, newDispenserModel);
+			hParams.SetString(1, newDispenserModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -561,7 +432,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newDispenserModel, true))
 		{
 			PrecacheModel(newDispenserModel);
-			DHookSetParamString(hParams, 1, newDispenserModel);
+			hParams.SetString(1, newDispenserModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -572,7 +443,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 			if (FileExists(newDispenserModel, true))
 			{
 				PrecacheModel(newDispenserModel);
-				DHookSetParamString(hParams, 1, newDispenserModel);
+				hParams.SetString(1, newDispenserModel);
 
 				return MRES_ChangedHandled;
 			}
@@ -584,7 +455,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newDispenserModel, true))
 		{
 			PrecacheModel(newDispenserModel);
-			DHookSetParamString(hParams, 1, newDispenserModel);
+			hParams.SetString(1, newDispenserModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -595,7 +466,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 			if (FileExists(newDispenserModel, true))
 			{
 				PrecacheModel(newDispenserModel);
-				DHookSetParamString(hParams, 1, newDispenserModel);
+				hParams.SetString(1, newDispenserModel);
 
 				return MRES_ChangedHandled;
 			}
@@ -607,7 +478,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newDispenserModel, true))
 		{
 			PrecacheModel(newDispenserModel);
-			DHookSetParamString(hParams, 1, newDispenserModel);
+			hParams.SetString(1, newDispenserModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -618,7 +489,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 			if (FileExists(newDispenserModel, true))
 			{
 				PrecacheModel(newDispenserModel);
-				DHookSetParamString(hParams, 1, newDispenserModel);
+				hParams.SetString(1, newDispenserModel);
 
 				return MRES_ChangedHandled;
 			}
@@ -630,7 +501,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newDispenserModel, true))
 		{
 			PrecacheModel(newDispenserModel);
-			DHookSetParamString(hParams, 1, newDispenserModel);
+			hParams.SetString(1, newDispenserModel);
 
 			return MRES_ChangedHandled;
 		}
@@ -641,7 +512,7 @@ MRESReturn DispenserSetModelPre(int building, DHookParam hParams)
 			if (FileExists(newDispenserModel, true))
 			{
 				PrecacheModel(newDispenserModel);
-				DHookSetParamString(hParams, 1, newDispenserModel);
+				hParams.SetString(1, newDispenserModel);
 
 				return MRES_ChangedHandled;
 			}
@@ -677,14 +548,14 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newteleportermodel, true))
 		{
 			PrecacheModel(newteleportermodel);
-			DHookSetParamString(hParams, 1, newteleportermodel);
+			hParams.SetString(1, newteleportermodel);
 
 			return MRES_ChangedHandled;
 		}
 	}
 
 	char oldteleportermodel[PLATFORM_MAX_PATH];
-	DHookGetParamString(hParams, 1, oldteleportermodel, sizeof(oldteleportermodel));
+	hParams.GetString(1, oldteleportermodel, sizeof(oldteleportermodel));
 
 	// Save for more case..
 	char teleporterModel[128];
@@ -696,7 +567,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newteleportermodel, true))
 		{
 			PrecacheModel(newteleportermodel);
-			DHookSetParamString(hParams, 1, newteleportermodel);
+			hParams.SetString(1, newteleportermodel);
 
 			return MRES_ChangedHandled;
 		}
@@ -707,7 +578,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 			if (FileExists(newteleportermodel, true))
 			{
 				PrecacheModel(newteleportermodel);
-				DHookSetParamString(hParams, 1, newteleportermodel);
+				hParams.SetString(1, newteleportermodel);
 
 				return MRES_ChangedHandled;
 			}
@@ -719,7 +590,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newteleportermodel, true))
 		{
 			PrecacheModel(newteleportermodel);
-			DHookSetParamString(hParams, 1, newteleportermodel);
+			hParams.SetString(1, newteleportermodel);
 
 			return MRES_ChangedHandled;
 		}
@@ -730,7 +601,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 			if (FileExists(newteleportermodel, true))
 			{
 				PrecacheModel(newteleportermodel);
-				DHookSetParamString(hParams, 1, newteleportermodel);
+				hParams.SetString(1, newteleportermodel);
 
 				return MRES_ChangedHandled;
 			}
@@ -742,7 +613,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newteleportermodel, true))
 		{
 			PrecacheModel(newteleportermodel);
-			DHookSetParamString(hParams, 1, newteleportermodel);
+			hParams.SetString(1, newteleportermodel);
 
 			return MRES_ChangedHandled;
 		}
@@ -753,7 +624,7 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 		if (FileExists(newteleportermodel, true))
 		{
 			PrecacheModel(newteleportermodel);
-			DHookSetParamString(hParams, 1, newteleportermodel);
+			hParams.SetString(1, newteleportermodel);
 
 			return MRES_ChangedHandled;
 		}
@@ -762,13 +633,49 @@ MRESReturn TeleporterSetModelPre(int building, DHookParam hParams)
 	return MRES_Ignored;
 }
 
-MRESReturn OnCalculateObjectCostPost(Address pThis, DHookReturn hReturn, DHookParam hParams)
+/**
+ * forward void TF2CA_DispenserStartHealing(int builder, int building, int patient);
+ */
+MRESReturn DHook_DispenserStartHealingPost(int building, DHookParam hParams)
 {
-	int cost = DHookGetReturn(hReturn);
+	int builder = TF2_GetObjectBuilder(building);
 
-	int builder = DHookGetParam(hParams, 1);
+	int patient = hParams.Get(1);
+	if (!IsValidClient(patient))
+	{
+		patient = -1;
+	}
 
-	int	type = DHookGetParam(hParams, 2);
+	Call_StartForward(g_DispenserStartHealingForward);
+	Call_PushCell(builder);
+	Call_PushCell(building);
+	Call_PushCell(patient);
+	Call_Finish();
+
+	return MRES_Ignored;
+}
+
+MRESReturn DispenserGetHealRatePost(int building, DHookReturn hReturn)
+{
+	int builder = TF2_GetObjectBuilder(building);
+	if (!IsValidClient(builder))
+	{
+		return MRES_Ignored;
+	}
+
+	float healrate = hReturn.Value;
+	healrate = TF2CustAttr_HookValueFloatOnClient(healrate, "dispenser healrate multiplier", builder);
+	hReturn.Value = healrate;
+	return MRES_Override;
+}
+
+MRESReturn DynDetour_CalculateObjectCostPost(Address pThis, DHookReturn hReturn, DHookParam hParams)
+{
+	int cost = hReturn.Value;
+
+	int builder = hParams.Get(1);
+
+	int	type = hParams.Get(2);
 
 	float returncost = float(cost);
 	if (type == 0)
@@ -780,7 +687,75 @@ MRESReturn OnCalculateObjectCostPost(Address pThis, DHookReturn hReturn, DHookPa
 		returncost = TF2CustAttr_HookValueFloatOnClient(returncost, "mod sentry cost", builder);
 	}
 
-	DHookSetReturn(hReturn, RoundFloat(returncost));
+	hReturn.Value = RoundFloat(returncost);
 
 	return MRES_ChangedOverride;
+}
+
+/**
+ * forward void TF2CA_DispenserStopHealing(int builder, int building, int patient);
+ */
+MRESReturn DynDetour_DispenserStopHealingPost(int building, DHookParam hParams)
+{
+	int builder = TF2_GetObjectBuilder(building);
+
+	int patient = DHookGetParam(hParams, 1);
+	if (!IsValidClient(patient))
+	{
+		patient = -1;
+	}
+
+	Call_StartForward(g_DispenserStopHealingForward);
+	Call_PushCell(builder);
+	Call_PushCell(building);
+	Call_PushCell(patient);
+	Call_Finish();
+
+	return MRES_Ignored;
+}
+
+MRESReturn DynDetour_GetConstructionMultiplierPost(int building, DHookReturn hReturn)
+{
+	int builder = TF2_GetObjectBuilder(building);
+	if (!IsValidClient(builder))
+	{
+		return MRES_Ignored;
+	}
+
+	if (TF2_GetObjectType(building) == TFObject_Dispenser)
+	{
+		float returnvalue = DHookGetReturn(hReturn);
+		returnvalue = TF2CustAttr_HookValueFloatOnClient(returnvalue, "engineer dispenser build rate multiplier", builder);
+		hReturn.Value = returnvalue;
+
+		return MRES_Override;
+	}
+
+	return MRES_Ignored;
+}
+
+MRESReturn DynDetour_CouldHealTargetPre(int building, DHookReturn hReturn, DHookParam hParams)
+{
+	int builder = TF2_GetObjectBuilder(building);
+	int patient = hParams.Get(1);
+
+	if (IsValidClient(patient))
+	{
+		Call_StartForward(g_DispenserCouldHealTargetForward);
+		Call_PushCell(builder);
+		Call_PushCell(building);
+		Call_PushCell(patient);
+		bool result;
+		Call_PushCellRef(result);
+		Action ret;
+		Call_Finish(ret);
+
+		if (ret > Plugin_Changed)
+		{
+			hReturn.Value = result;
+			return MRES_Supercede;
+		}
+	}
+
+	return MRES_Ignored;
 }

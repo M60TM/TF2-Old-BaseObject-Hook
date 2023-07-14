@@ -1,6 +1,6 @@
 #pragma semicolon 1
 #include <sourcemod>
-#include <dhooks>
+#include <dhooks_gameconf_shim>
 #include <sdkhooks>
 #include <sdktools>
 #include <tf2_stocks>
@@ -14,8 +14,10 @@
 #include <stocksoup/tf/entity_prop_stocks>
 #include <stocksoup/var_strings>
 
-#include "tf2ca_custom_building/dhooks.sp"
 #include "tf2ca_custom_building/methodmaps.sp"
+#include "tf2ca_custom_building/dhooks.sp"
+#include "tf2ca_custom_building/natives.sp"
+#include "tf2ca_custom_building/forwards.sp"
 
 /////////////////////////////
 // PLUGIN INFO             //
@@ -26,104 +28,62 @@ public Plugin myinfo =
 	name		= "[TF2] Custom Attribute: Custom Building",
 	author		= "Sandy and Monera",
 	description = "A few native and custom attributes, forwards for handling custom building.",
-	version		= "1.4.0",
+	version		= "1.5.0",
 	url			= "https://github.com/M60TM/TF2CA-Custom-Building"
 }
-
-/////////////////////////////
-// Forward                 //
-/////////////////////////////
-
-GlobalForward g_OnBuildObjectForward;
-GlobalForward g_OnUpgradeObjectForward;
-GlobalForward g_OnCarryObjectForward;
-GlobalForward g_OnDropObjectForward;
-GlobalForward g_OnObjectRemovedForward;
-GlobalForward g_OnObjectDestroyedForward;
-GlobalForward g_OnObjectDetonatedForward;
-
-GlobalForward g_OnSentrySoundForward;
 
 /////////////////////////////
 // SDKCall                 //
 /////////////////////////////
 
-Handle		g_SDKCallDetonateObjectOfType;
-Handle		g_SDKCallBuildingDestroyScreens;
-Handle		g_SDKCallPlayerGetObjectOfType;
+static Handle g_SDKCallDetonateObjectOfType;
+static Handle g_SDKCallBuildingDestroyScreens;
+static Handle g_SDKCallPlayerGetObjectOfType;
 
 public APLRes AskPluginLoad2(Handle self, bool late, char[] error, int maxlen)
 {
 	RegPluginLibrary("tf2ca_custom_building");
 
-	CreateNative("TF2CA_BuilderHasCustomDispenser", Native_BuilderHasCustomDispenser);
-	CreateNative("TF2CA_BuilderHasCustomSentry", Native_BuilderHasCustomSentry);
-	CreateNative("TF2CA_BuilderHasCustomTeleporter", Native_BuilderHasCustomTeleporter);
-	CreateNative("TF2CA_DetonateObjectOfType", Native_DetonateObjectOfType);
-	CreateNative("TF2CA_PlayerGetObjectOfType", Native_PlayerGetObjectOfType);
-	CreateNative("TF2CA_DestroyScreens", Native_DestroyScreens);
+	Setup_Natives();
 
 	return APLRes_Success;
 }
 
 public void OnPluginStart()
 {
-	GameData hGameConf = new GameData("tf2.cattr_object");
-	if (!hGameConf)
+	GameData data = new GameData("tf2.cattr_object");
+	if (!data)
 	{
 		SetFailState("Failed to load gamedata (tf2.cattr_object).");
+	} 
+	else if (!ReadDHooksDefinitions("tf2.cattr_object"))
+	{
+		SetFailState("Failed to read dhooks definitions of gamedata (tf2.cattr_object).");
 	}
 
 	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(hGameConf, SDKConf_Signature, "CTFPlayer::DetonateObjectOfType()");
+	PrepSDKCall_SetFromConf(data, SDKConf_Signature, "CTFPlayer::DetonateObjectOfType()");
 	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);	  // int - type
 	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);	  // int - mode
 	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);	  // bool - silent
 	g_SDKCallDetonateObjectOfType = EndPrepSDKCall();
 
 	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(hGameConf, SDKConf_Signature, "CTFPlayer::GetObjectOfType()");
+	PrepSDKCall_SetFromConf(data, SDKConf_Signature, "CTFPlayer::GetObjectOfType()");
 	PrepSDKCall_SetReturnInfo(SDKType_CBaseEntity, SDKPass_Pointer);
 	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
 	g_SDKCallPlayerGetObjectOfType = EndPrepSDKCall();
 
 	StartPrepSDKCall(SDKCall_Entity);
-	PrepSDKCall_SetFromConf(hGameConf, SDKConf_Signature, "CBaseObject::DestroyScreens()");
+	PrepSDKCall_SetFromConf(data, SDKConf_Signature, "CBaseObject::DestroyScreens()");
 	g_SDKCallBuildingDestroyScreens = EndPrepSDKCall();
 
-	Setup_DHook(hGameConf);
+	Setup_DHook(data);
 
-	delete hGameConf;
+	delete data;
 
-	g_OnBuildObjectForward = CreateGlobalForward("TF2CA_OnBuildObject", ET_Event, Param_Cell, Param_Cell, Param_Cell);
-
-	g_OnUpgradeObjectForward = CreateGlobalForward("TF2CA_OnUpgradeObject", ET_Event, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
-
-	g_OnCarryObjectForward = CreateGlobalForward("TF2CA_OnCarryObject", ET_Event, Param_Cell, Param_Cell, Param_Cell);
-
-	g_OnDropObjectForward = CreateGlobalForward("TF2CA_OnDropObject", ET_Event, Param_Cell, Param_Cell, Param_Cell);
-
-	g_OnObjectRemovedForward = CreateGlobalForward("TF2CA_OnObjectRemoved", ET_Event, Param_Cell, Param_Cell, Param_Cell);
-
-	g_OnObjectDestroyedForward = CreateGlobalForward("TF2CA_OnObjectDestroyed", ET_Event, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
-
-	g_OnObjectDetonatedForward = CreateGlobalForward("TF2CA_OnObjectDetonated", ET_Event, Param_Cell, Param_Cell, Param_Cell);
-
-	g_ObjectOnGoActiveForward = CreateGlobalForward("TF2CA_ObjectOnGoActive", ET_Event, Param_Cell, Param_Cell, Param_Cell);
-
-	g_ObjectStartUpgradingForward = CreateGlobalForward("TF2CA_ObjectStartUpgrading", ET_Event, Param_Cell, Param_Cell, Param_Cell);
-
-	g_ObjectFinishUpgradingForward = CreateGlobalForward("TF2CA_ObjectFinishUpgrading", ET_Event, Param_Cell, Param_Cell, Param_Cell);
-
-	g_DispenserStartHealingForward = CreateGlobalForward("TF2CA_DispenserStartHealing", ET_Event, Param_Cell, Param_Cell, Param_Cell);
-
-	g_DispenserStopHealingPreForward = CreateGlobalForward("TF2CA_DispenserStopHealing", ET_Hook, Param_Cell, Param_Cell, Param_Cell);
-
-	g_DispenserStopHealingPostForward = CreateGlobalForward("TF2CA_DispenserStopHealingPost", ET_Event, Param_Cell, Param_Cell, Param_Cell);
-
-	g_OnSentrySoundForward = CreateGlobalForward("TF2CA_SentryEmitSound", ET_Hook, Param_Cell, Param_Cell, Param_String, Param_CellByRef, Param_FloatByRef,
-			Param_CellByRef, Param_CellByRef, Param_CellByRef, Param_String, Param_CellByRef);
+	Setup_Forwards();
 
 	AddNormalSoundHook(HookSound);
 }
@@ -191,22 +151,8 @@ Action HookSound(int clients[MAXPLAYERS], int &numClients, char sample[PLATFORM_
 		{
 			return Plugin_Continue;
 		}
-		
-		Call_StartForward(g_OnSentrySoundForward);
-		Call_PushCell(entity);
-		Call_PushCell(builder);
-		Call_PushStringEx(sample, PLATFORM_MAX_PATH, SM_PARAM_STRING_UTF8 | SM_PARAM_STRING_COPY, SM_PARAM_COPYBACK);
-		Call_PushCellRef(channel);
-		Call_PushFloatRef(volume);
-		Call_PushCellRef(level);
-		Call_PushCellRef(pitch);
-		Call_PushCellRef(flags);
-		Call_PushStringEx(soundEntry, PLATFORM_MAX_PATH, SM_PARAM_STRING_UTF8|SM_PARAM_STRING_COPY, SM_PARAM_COPYBACK);
-		Call_PushCellRef(seed);
-		Action result;
-		Call_Finish(result);
 
-		return result;
+		return CallSentryEmitSoundForward(entity, builder, sample, channel, volume, level, pitch);
 	}
 	
 	return Plugin_Continue;
@@ -249,8 +195,8 @@ void OnInventoryAppliedPost(Event event, const char[] name, bool dontBroadcast)
 		TF2CustAttr_GetString(weapon, "custom teleporter type", attr[2], sizeof(attr[]), attr[2]);
 	}
 
+	bool destroy[3] = { false, ... };
 	int buildings = TF2Util_GetPlayerObjectCount(client);
-
 	for (int i = 0; i < buildings; i++)
 	{
 		int building = TF2Util_GetPlayerObject(client, i);
@@ -268,7 +214,7 @@ void OnInventoryAppliedPost(Event event, const char[] name, bool dontBroadcast)
 				Builder(client).GetCustomDispenserType(customBuildingType[0], sizeof(customBuildingType[]));
 				if (strcmp(attr[0], customBuildingType[0]) != 0)
 				{
-					DetonateObjectOfType(client, 0, 0, true);
+					destroy[0] = true; 
 				}
 			}
 			case TFObject_Sentry:
@@ -276,7 +222,7 @@ void OnInventoryAppliedPost(Event event, const char[] name, bool dontBroadcast)
 				Builder(client).GetCustomSentryType(customBuildingType[1], sizeof(customBuildingType[]));
 				if (strcmp(attr[1], customBuildingType[1]) != 0)
 				{
-					DetonateObjectOfType(client, 2, 0, true);
+					destroy[2] = true;
 				}
 			}
 			case TFObject_Teleporter:
@@ -284,10 +230,18 @@ void OnInventoryAppliedPost(Event event, const char[] name, bool dontBroadcast)
 				Builder(client).GetCustomTeleporterType(customBuildingType[2], sizeof(customBuildingType[]));
 				if (strcmp(attr[2], customBuildingType[2]) != 0)
 				{
-					DetonateObjectOfType(client, 1, 0, true);
-					DetonateObjectOfType(client, 1, 1, true);
+					destroy[1] = true;
 				}
 			}
+		}
+	}
+
+	for (int i = 0; i < 3; i++)
+	{
+		if (destroy[i])
+		{
+			DetonateObjectOfType(client, i, 0, true);
+			if (i == 1) DetonateObjectOfType(client, i, 1, true);	// teleporter
 		}
 	}
 
@@ -312,15 +266,11 @@ void OnBuildObject(Event event, const char[] name, bool dontBroadcast)
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 
-	Call_StartForward(g_OnBuildObjectForward);
-	Call_PushCell(builder);
-	Call_PushCell(building);
-	Call_PushCell(buildingtype);
-	Call_Finish();
-
+	CallBuildObjectForward(builder, building, buildingtype);
+	
 	if (builder != -1)
 	{
-		int	 wrench = GetPlayerWeaponSlot(builder, 2);
+		int wrench = GetPlayerWeaponSlot(builder, 2);
 		char attr[256];
 		if (TF2CustAttr_GetString(wrench, "building upgrade cost", attr, sizeof(attr)))
 		{
@@ -352,12 +302,7 @@ void OnUpgradeObject(Event event, const char[] name, bool dontBroadcast)
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 
-	Call_StartForward(g_OnUpgradeObjectForward);
-	Call_PushCell(upgrader);
-	Call_PushCell(builder);
-	Call_PushCell(building);
-	Call_PushCell(buildingtype);
-	Call_Finish();
+	CallUpgradeObjectForward(upgrader, builder, building, buildingtype);
 
 	if (builder != -1)
 	{
@@ -386,11 +331,7 @@ void OnCarryObject(Event event, const char[] name, bool dontBroadcast)
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 
-	Call_StartForward(g_OnCarryObjectForward);
-	Call_PushCell(builder);
-	Call_PushCell(building);
-	Call_PushCell(buildingtype);
-	Call_Finish();
+	CallCarryObjectForward(builder, building, buildingtype);
 }
 
 /**
@@ -409,11 +350,7 @@ void OnDropObject(Event event, const char[] name, bool dontBroadcast)
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 
-	Call_StartForward(g_OnDropObjectForward);
-	Call_PushCell(builder);
-	Call_PushCell(building);
-	Call_PushCell(buildingtype);
-	Call_Finish();
+	CallDropObjectForward(builder, building, buildingtype);
 }
 
 /**
@@ -432,11 +369,7 @@ void OnObjectRemoved(Event event, const char[] name, bool dontBroadcast)
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 
-	Call_StartForward(g_OnObjectRemovedForward);
-	Call_PushCell(builder);
-	Call_PushCell(building);
-	Call_PushCell(buildingtype);
-	Call_Finish();
+	CallObjectRemovedForward(builder, building, buildingtype);
 }
 
 /**
@@ -467,26 +400,13 @@ void OnObjectDestroyed(Event event, const char[] name, bool dontBroadcast)
 
 	int weapon = event.GetInt("weaponid");
 
-	if (!IsValidEntity(weapon))
-	{
-		weapon = -1;
-	}
-
 	int building = event.GetInt("index");
 
 	bool wasbuilding = event.GetBool("was_building");
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 
-	Call_StartForward(g_OnObjectDestroyedForward);
-	Call_PushCell(builder);
-	Call_PushCell(attacker);
-	Call_PushCell(assister);
-	Call_PushCell(weapon);
-	Call_PushCell(building);
-	Call_PushCell(buildingtype);
-	Call_PushCell(wasbuilding);
-	Call_Finish();
+	CallObjectDestroyedForward(builder, attacker, assister, weapon, building, buildingtype, wasbuilding);
 }
 
 /**
@@ -505,95 +425,7 @@ void OnObjectDetonated(Event event, const char[] name, bool dontBroadcast)
 
 	TFObjectType buildingtype = TF2_GetObjectType(building);
 
-	Call_StartForward(g_OnObjectDetonatedForward);
-	Call_PushCell(builder);
-	Call_PushCell(building);
-	Call_PushCell(buildingtype);
-	Call_Finish();
-}
-
-/////////////////////////////
-// Native                  //
-/////////////////////////////
-
-int Native_BuilderHasCustomDispenser(Handle plugin, int nParams)
-{
-	int client = GetNativeInGameClient(1);
-
-	int len;
-	GetNativeStringLength(2, len);
-	if (len <= 0)
-	{
-		return false;
-	}
-	char[] value = new char[len + 1];
-	GetNativeString(2, value, len + 1);
-
-	char dispenserType[CUSTOM_BUILDING_TYPE_NAME_LENGTH];
-	Builder(client).GetCustomDispenserType(dispenserType, sizeof(dispenserType));
-	return strcmp(dispenserType, value) == 0;
-}
-
-int Native_BuilderHasCustomSentry(Handle plugin, int nParams)
-{
-	int client = GetNativeInGameClient(1);
-
-	int len;
-	GetNativeStringLength(2, len);
-	if (len <= 0)
-	{
-		return false;
-	}
-	char[] value = new char[len + 1];
-	GetNativeString(2, value, len + 1);
-
-	char sentryType[CUSTOM_BUILDING_TYPE_NAME_LENGTH];
-	Builder(client).GetCustomSentryType(sentryType, sizeof(sentryType));
-	return strcmp(sentryType, value) == 0;
-}
-
-int Native_BuilderHasCustomTeleporter(Handle plugin, int nParams)
-{
-	int client = GetNativeInGameClient(1);
-
-	int len;
-	GetNativeStringLength(2, len);
-	if (len <= 0)
-	{
-		return false;
-	}
-	char[] value = new char[len + 1];
-	GetNativeString(2, value, len + 1);
-
-	char teleporterType[CUSTOM_BUILDING_TYPE_NAME_LENGTH];
-	Builder(client).GetCustomTeleporterType(teleporterType, sizeof(teleporterType));
-	return strcmp(teleporterType, value) == 0;
-}
-
-int Native_DetonateObjectOfType(Handle plugin, int nParams)
-{
-	int	 client = GetNativeInGameClient(1);
-	int	 type	= GetNativeCell(2);
-	int	 mode	= GetNativeCell(3);
-	bool silent = GetNativeCell(4);
-
-	return SDKCall(g_SDKCallDetonateObjectOfType, client, type, mode, silent);
-}
-
-int Native_PlayerGetObjectOfType(Handle plugin, int nParams)
-{
-	int owner	   = GetNativeInGameClient(1);
-	int objectType = GetNativeCell(2);
-	int objectMode = GetNativeCell(3);
-
-	return SDKCall(g_SDKCallPlayerGetObjectOfType, owner, objectType, objectMode);
-}
-
-int Native_DestroyScreens(Handle plugin, int nParams)
-{
-	int building = GetNativeCell(1);
-
-	return SDKCall(g_SDKCallBuildingDestroyScreens, building);
+	CallObjectDetonatedForward(builder, building, buildingtype);
 }
 
 /////////////////////////////
@@ -640,32 +472,42 @@ void UpdateBuildingInfo(int building, TFObjectType type, const char[] attr)
 		{
 			if (ReadIntVar(attr, "sentry"))
 			{
-				int iSentryMetalRequired[4];
-				iSentryMetalRequired[0] = 0;
-				iSentryMetalRequired[1] = ReadIntVar(attr, "sentry1", 200);
-				iSentryMetalRequired[2] = ReadIntVar(attr, "sentry2", 400);
-				iSentryMetalRequired[3] = ReadIntVar(attr, "sentry3", 600);
+				int sentryMetalRequired[4];
+				sentryMetalRequired[0] = 0;
+				sentryMetalRequired[1] = ReadIntVar(attr, "sentry1", 200);
+				sentryMetalRequired[2] = ReadIntVar(attr, "sentry2", 400);
+				sentryMetalRequired[3] = ReadIntVar(attr, "sentry3", 600);
 
-				SetEntProp(building, Prop_Send, "m_iUpgradeMetalRequired", iSentryMetalRequired[level]);
+				SetEntProp(building, Prop_Send, "m_iUpgradeMetalRequired", sentryMetalRequired[level]);
 			}
 		}
 		case TFObject_Dispenser:
 		{
 			if (ReadIntVar(attr, "dispenser"))
 			{
-				int iDispenserMetalRequired[4];
-				iDispenserMetalRequired[0] = 0;
-				iDispenserMetalRequired[1] = ReadIntVar(attr, "dispenser1", 200);
-				iDispenserMetalRequired[2] = ReadIntVar(attr, "dispenser2", 400);
-				iDispenserMetalRequired[3] = ReadIntVar(attr, "dispenser3", 600);
+				int dispenserMetalRequired[4];
+				dispenserMetalRequired[0] = 0;
+				dispenserMetalRequired[1] = ReadIntVar(attr, "dispenser1", 200);
+				dispenserMetalRequired[2] = ReadIntVar(attr, "dispenser2", 400);
+				dispenserMetalRequired[3] = ReadIntVar(attr, "dispenser3", 600);
 
-				SetEntProp(building, Prop_Send, "m_iUpgradeMetalRequired", iDispenserMetalRequired[level]);
+				SetEntProp(building, Prop_Send, "m_iUpgradeMetalRequired", dispenserMetalRequired[level]);
 			}
 		}
 	}
 }
 
-void DetonateObjectOfType(int client, int type, int mode = 0, bool silent = false)
+any DetonateObjectOfType(int client, int type, int mode = 0, bool silent = false)
 {
-	SDKCall(g_SDKCallDetonateObjectOfType, client, type, mode, silent);
+	return SDKCall(g_SDKCallDetonateObjectOfType, client, type, mode, silent);
+}
+
+any PlayerGetObjectOfType(int owner, int objectType, int objectMode)
+{
+	return SDKCall(g_SDKCallPlayerGetObjectOfType, owner, objectType, objectMode);
+}
+
+any DestroyScreens(int building)
+{
+	return SDKCall(g_SDKCallBuildingDestroyScreens, building);
 }

@@ -66,7 +66,7 @@ native void TF2CA_DestroyScreens(int building);
 /////////////////////////////
 
 /**
- * Called When player build an object.
+ * Called when player build an object.
  * 
  * @param builder				object builder.
  * @param building  			object's index.
@@ -75,7 +75,7 @@ native void TF2CA_DestroyScreens(int building);
 forward void TF2CA_OnBuildObject(int builder, int building, TFObjectType buildingtype);
 
 /**
- * Called When player upgrade an object.
+ * Called when player upgrade an object.
  * 
  * @param upgrader				object upgrader.
  * @param builder				object builder.
@@ -85,7 +85,7 @@ forward void TF2CA_OnBuildObject(int builder, int building, TFObjectType buildin
 forward void TF2CA_OnUpgradeObject(int upgrader, int builder, int building, TFObjectType buildingtype);
 
 /**
- * Called When player carry an object.
+ * Called when player carry an object.
  * 
  * @param builder				object builder.
  * @param building  			object's index.
@@ -94,7 +94,7 @@ forward void TF2CA_OnUpgradeObject(int upgrader, int builder, int building, TFOb
 forward void TF2CA_OnCarryObject(int builder, int building, TFObjectType buildingtype);
 
 /**
- * Called When player drop an object.
+ * Called when player drop an object.
  * 
  * @param builder				object builder.
  * @param building  			object's index.
@@ -103,7 +103,7 @@ forward void TF2CA_OnCarryObject(int builder, int building, TFObjectType buildin
 forward void TF2CA_OnDropObject(int builder, int building, TFObjectType buildingtype);
 
 /**
- * Called When object is removed.
+ * Called when object is removed.
  * 
  * @param builder				object builder.
  * @param building  			object's index.
@@ -112,7 +112,7 @@ forward void TF2CA_OnDropObject(int builder, int building, TFObjectType building
 forward void TF2CA_OnObjectRemoved(int builder, int building, TFObjectType buildingtype);
 
 /**
- * Called When object is destroyed.
+ * Called when object is destroyed.
  * 
  * @param builder		    	object builder.
  * @param attacker		  		object destoryer.
@@ -122,11 +122,10 @@ forward void TF2CA_OnObjectRemoved(int builder, int building, TFObjectType build
  * @param buildingtype  		object's type.
  * @param wasbuilding   		check object was building when destroyed.
  */
-forward void TF2CA_OnObjectDestroyed(int builder, int attacker, int assister, int weapon, 
-			int building, TFObjectType buildingtype, bool wasbuilding);
+forward void TF2CA_OnObjectDestroyed(int builder, int attacker, int assister, int weapon, int building, TFObjectType buildingtype, bool wasbuilding);
 
 /**
- * Called When object is removed.
+ * Called when object is removed.
  * 
  * @param builder				object builder.
  * @param building  			object's index.
@@ -135,7 +134,7 @@ forward void TF2CA_OnObjectDestroyed(int builder, int attacker, int assister, in
 forward void TF2CA_OnObjectDetonated(int builder, int building, TFObjectType buildingtype);
 
 /**
- * Called When object go active.
+ * Called when object go active.
  * 
  * @param builder				object builder.
  * @param building  			object's index.
@@ -144,7 +143,7 @@ forward void TF2CA_OnObjectDetonated(int builder, int building, TFObjectType bui
 forward void TF2CA_ObjectOnGoActive(int builder, int building, TFObjectType buildingtype);
 
 /**
- * Called When object start upgrade.
+ * Called when object start upgrade.
  * 
  * @param builder				object builder.
  * @param building  			object's index.
@@ -153,7 +152,7 @@ forward void TF2CA_ObjectOnGoActive(int builder, int building, TFObjectType buil
 forward void TF2CA_ObjectStartUpgrading(int builder, int building, TFObjectType buildingtype);
 
 /**
- * Called When object finish upgrade.
+ * Called when object finish upgrade.
  * 
  * @param builder				object builder.
  * @param building  			object's index.
@@ -162,7 +161,7 @@ forward void TF2CA_ObjectStartUpgrading(int builder, int building, TFObjectType 
 forward void TF2CA_ObjectFinishUpgrading(int builder, int building, TFObjectType buildingtype);
 
 /**
- * Called When dispenser start healing.
+ * Called when dispenser start healing.
  * 
  * @param builder
  * @param building
@@ -171,43 +170,41 @@ forward void TF2CA_ObjectFinishUpgrading(int builder, int building, TFObjectType
 forward void TF2CA_DispenserStartHealing(int builder, int building, int patient);
 
 /**
- * Called When dispenser stop healing.
- * 
- * @param builder
- * @param building
- * @param patient
- * @return
- */
-forward MRESReturn TF2CA_DispenserStopHealing(int builder, int building, int patient);
-
-/**
- * Called When dispenser stop healing.
+ * Called when dispenser stop healing.
  * 
  * @param builder
  * @param building
  * @param patient
  */
-forward void TF2CA_DispenserStopHealingPost(int builder, int building, int patient);
+forward void TF2CA_DispenserStopHealing(int builder, int building, int patient);
 
 /**
- * Called When sentrygun emits sound.
+ * Called when sentrygun emits sound.
  * 
  * @param sentry		sentry index.
  * @param builder		builder index.
- * @param sample		Sound file name relative to the "sound" folder.
- * @param channel		Channel emitting the sound.
- * @param volume		Sound volume.
- * @param level			Sound level.
- * @param pitch			Sound pitch.
- * @param flags			Sound flags.
- * @param soundEntry	Game sound entry name. (Used in engines newer than Portal 2)
- * @param seed			Sound seed. (Used in engines newer than Portal 2)
- * @return				Plugin_Continue to allow the sound to be played, Plugin_Stop to block it,
- * 						Plugin_Changed when any parameter has been modified.
+ * @param sample        Sound file name relative to the "sound" folder.
+ * @param channel       Channel emitting the sound.
+ * @param volume        Sound volume.
+ * @param level         Sound level.
+ * @param pitch         Sound pitch.
+ * @return
  */
 forward Action TF2CA_SentryEmitSound(int sentry, int builder, char sample[PLATFORM_MAX_PATH],
-	int &channel, float &volume, int &level, int &pitch, int &flags,
-	char soundEntry[PLATFORM_MAX_PATH], int &seed);
+	int &channel, float &volume, int &level, int &pitch);
+
+/**
+ * Called when dispenser consider patient is heal target.
+ * Return Plugin_Continue to let the original calculation or return a higher
+ * action to override the decision with the value of 'result'
+ * 
+ * @param builder		builder index.
+ * @param dispenser		dispenser entity index.
+ * @param patient		patient index.
+ * @param result		use true to pass, false to block.
+ * @return				Plugin_Continue for original calculation, higher value to use 'result'.
+ */
+forward Action TF2CA_DispenserCouldHealTarget(int builder, int dispenser, int patient, bool &result);
 
 public SharedPlugin __pl_tf2ca_custom_building = {
 	name = "tf2ca_custom_building",

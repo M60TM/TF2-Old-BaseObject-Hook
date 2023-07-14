@@ -3,9 +3,9 @@
 
 #define CUSTOM_BUILDING_TYPE_NAME_LENGTH 64
 
-static char g_customDispenserType[MAXPLAYERS + 1][CUSTOM_BUILDING_TYPE_NAME_LENGTH];
-static char g_customSentryType[MAXPLAYERS + 1][CUSTOM_BUILDING_TYPE_NAME_LENGTH];
-static char g_customTeleporterType[MAXPLAYERS + 1][CUSTOM_BUILDING_TYPE_NAME_LENGTH];
+static char customDispenserType[MAXPLAYERS + 1][CUSTOM_BUILDING_TYPE_NAME_LENGTH];
+static char customSentryType[MAXPLAYERS + 1][CUSTOM_BUILDING_TYPE_NAME_LENGTH];
+static char customTeleporterType[MAXPLAYERS + 1][CUSTOM_BUILDING_TYPE_NAME_LENGTH];
 
 methodmap Builder
 {
@@ -22,33 +22,41 @@ methodmap Builder
 		}
 	}
 
+	property bool IsValid
+	{
+		public get()
+		{
+			return IsValidClient(this.Client);
+		}
+	}
+
 	public int GetCustomDispenserType(char[] buffer, int maxlen)
 	{
-		return strcopy(buffer, maxlen, g_customDispenserType[this.Client]);
+		return strcopy(buffer, maxlen, customDispenserType[this.Client]);
 	}
 
 	public int SetCustomDispenserType(const char[] buffer)
 	{
-		return strcopy(g_customDispenserType[this.Client], sizeof(g_customDispenserType[]), buffer);
+		return strcopy(customDispenserType[this.Client], sizeof(customDispenserType[]), buffer);
 	}
 
 	public int GetCustomSentryType(char[] buffer, int maxlen)
 	{
-		return strcopy(buffer, maxlen, g_customSentryType[this.Client]);
+		return strcopy(buffer, maxlen, customSentryType[this.Client]);
 	}
 
 	public int SetCustomSentryType(const char[] buffer)
 	{
-		return strcopy(g_customSentryType[this.Client], sizeof(g_customSentryType[]), buffer);
+		return strcopy(customSentryType[this.Client], sizeof(customSentryType[]), buffer);
 	}
 
 	public int GetCustomTeleporterType(char[] buffer, int maxlen)
 	{
-		return strcopy(buffer, maxlen, g_customTeleporterType[this.Client]);
+		return strcopy(buffer, maxlen, customTeleporterType[this.Client]);
 	}
 
 	public int SetCustomTeleporterType(const char[] buffer)
 	{
-		return strcopy(g_customTeleporterType[this.Client], sizeof(g_customTeleporterType[]), buffer);
+		return strcopy(customTeleporterType[this.Client], sizeof(customTeleporterType[]), buffer);
 	}
 }
