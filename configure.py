@@ -3,22 +3,25 @@
 # plugin names, relative to `scripting/`
 plugins = [
 	'tf2ca_custom_building.sp',
+	'tf2bh.sp'
 ]
 
 # files to copy to builddir, relative to root
 # plugin names from previous list will be copied automatically
 copy_files = [
-	'gamedata/tf2.cattr_object.txt',
+	'gamedata/tf2.baseobject.txt',
+	'scripting/include/tf2bh.inc',
 	'scripting/include/tf2ca_custom_building.inc',
 	'scripting/include/tf2ca_stocks.inc',
-	'scripting/building_test/cwa_amp_rewrite.sp',
-	'scripting/building_test/cwa_speedpad.sp'
+	'scripting/building_test/amp_rewrite.sp',
+	'scripting/building_test/speedpad.sp'
 ]
 
 # additional directories for sourcepawn include lookup
 # `scripting/include` is explicitly included
 include_dirs = [
 	'scripting/tf2ca_custom_building',
+	'scripting/tf2bh',
 	'third_party/submodules',
 	'third_party/vendored'
 ]

@@ -1,6 +1,5 @@
 #pragma semicolon 1
 #include <sourcemod>
-#include <dhooks_gameconf_shim>
 #include <sdkhooks>
 #include <sdktools>
 #include <tf2_stocks>
@@ -8,16 +7,13 @@
 #pragma newdecls required
 
 #include <tf2utils>
-#include <tf_custom_attributes>
+#include <tf2bh>
 #include <tf2ca_stocks>
+
 #include <stocksoup/functions>
-#include <stocksoup/tf/entity_prop_stocks>
 #include <stocksoup/var_strings>
 
 #include "tf2ca_custom_building/methodmaps.sp"
-#include "tf2ca_custom_building/dhooks.sp"
-#include "tf2ca_custom_building/natives.sp"
-#include "tf2ca_custom_building/forwards.sp"
 
 /////////////////////////////
 // PLUGIN INFO             //
@@ -25,88 +21,32 @@
 
 public Plugin myinfo =
 {
-	name		= "[TF2] Custom Attribute: Custom Building",
+	name		= "[TF2CA] Custom Building",
 	author		= "Sandy and Monera",
-	description = "A few native and custom attributes, forwards for handling custom building.",
-	version		= "1.5.0",
+	description = "Custom Attributes For Building.",
+	version		= "1.6.0",
 	url			= "https://github.com/M60TM/TF2CA-Custom-Building"
 }
-
-/////////////////////////////
-// SDKCall                 //
-/////////////////////////////
-
-static Handle g_SDKCallDetonateObjectOfType;
-static Handle g_SDKCallBuildingDestroyScreens;
-static Handle g_SDKCallPlayerGetObjectOfType;
 
 public APLRes AskPluginLoad2(Handle self, bool late, char[] error, int maxlen)
 {
 	RegPluginLibrary("tf2ca_custom_building");
-
-	Setup_Natives();
+	
+	CreateNative("TF2CA_BuilderHasCustomDispenser", Native_BuilderHasCustomDispenser);
+	CreateNative("TF2CA_BuilderHasCustomSentry", Native_BuilderHasCustomSentry);
+	CreateNative("TF2CA_BuilderHasCustomTeleporter", Native_BuilderHasCustomTeleporter);
 
 	return APLRes_Success;
 }
 
 public void OnPluginStart()
 {
-	GameData data = new GameData("tf2.cattr_object");
-	if (!data)
-	{
-		SetFailState("Failed to load gamedata (tf2.cattr_object).");
-	} 
-	else if (!ReadDHooksDefinitions("tf2.cattr_object"))
-	{
-		SetFailState("Failed to read dhooks definitions of gamedata (tf2.cattr_object).");
-	}
-
-	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(data, SDKConf_Signature, "CTFPlayer::DetonateObjectOfType()");
-	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);	  // int - type
-	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);	  // int - mode
-	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);	  // bool - silent
-	g_SDKCallDetonateObjectOfType = EndPrepSDKCall();
-
-	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(data, SDKConf_Signature, "CTFPlayer::GetObjectOfType()");
-	PrepSDKCall_SetReturnInfo(SDKType_CBaseEntity, SDKPass_Pointer);
-	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
-	PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
-	g_SDKCallPlayerGetObjectOfType = EndPrepSDKCall();
-
-	StartPrepSDKCall(SDKCall_Entity);
-	PrepSDKCall_SetFromConf(data, SDKConf_Signature, "CBaseObject::DestroyScreens()");
-	g_SDKCallBuildingDestroyScreens = EndPrepSDKCall();
-
-	Setup_DHook(data);
-
-	delete data;
-
-	Setup_Forwards();
-
-	AddNormalSoundHook(HookSound);
-}
-
-public void OnMapStart()
-{
 	HookEvent("post_inventory_application", OnInventoryAppliedPost);
-	HookEvent("player_builtobject", OnBuildObject);
-	HookEvent("player_upgradedobject", OnUpgradeObject);
-	HookEvent("player_carryobject", OnCarryObject);
-	HookEvent("player_dropobject", OnDropObject);
-	HookEvent("object_removed", OnObjectRemoved);
-	HookEvent("object_destroyed", OnObjectDestroyed);
-	HookEvent("object_detonated", OnObjectDetonated);
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
-	if (StrEqual(classname, "obj_sentrygun") || StrEqual(classname, "obj_dispenser") || StrEqual(classname, "obj_teleporter"))
-	{
-		OnObjectCreated(entity, classname);
-	}
-	else if (StrEqual(classname, "tf_projectile_sentryrocket"))
+	if (StrEqual(classname, "tf_projectile_sentryrocket"))
 	{
 		SDKHook(entity, SDKHook_SpawnPost, SentryRocketSpawnPost);
 	}
@@ -131,36 +71,7 @@ void SentryRocketSpawnPost(int rocket)
 			SetSentryRocketModel(rocket, sAttributes);
 		}
 	}
-
-	return;
 }
-
-Action HookSound(int clients[MAXPLAYERS], int &numClients, char sample[PLATFORM_MAX_PATH],
-	int &entity, int &channel, float &volume, int &level, int &pitch, int &flags,
-	char soundEntry[PLATFORM_MAX_PATH], int &seed)
-{
-	if (!IsValidEntity(entity))
-		return Plugin_Continue;
-
-	static char classname[64];
-	GetEntityClassname(entity, classname, sizeof(classname));
-	if (StrContains(classname, "obj_sentrygun", true) != -1)
-	{
-		int builder = TF2_GetObjectBuilder(entity);
-		if (!IsValidClient(builder))
-		{
-			return Plugin_Continue;
-		}
-
-		return CallSentryEmitSoundForward(entity, builder, sample, channel, volume, level, pitch);
-	}
-	
-	return Plugin_Continue;
-}
-
-/////////////////////////////
-// Events                  //
-/////////////////////////////
 
 void OnInventoryAppliedPost(Event event, const char[] name, bool dontBroadcast)
 {
@@ -240,8 +151,8 @@ void OnInventoryAppliedPost(Event event, const char[] name, bool dontBroadcast)
 	{
 		if (destroy[i])
 		{
-			DetonateObjectOfType(client, i, 0, true);
-			if (i == 1) DetonateObjectOfType(client, i, 1, true);	// teleporter
+			TF2BH_PlayerDetonateObjectOfType(client, i, 0, true);
+			if (i == 1) TF2BH_PlayerDetonateObjectOfType(client, i, 1, true);	// teleporter
 		}
 	}
 
@@ -250,217 +161,556 @@ void OnInventoryAppliedPost(Event event, const char[] name, bool dontBroadcast)
 	Builder(client).SetCustomTeleporterType(attr[2]);
 }
 
-/**
- * forward void TF2CA_OnBuildObject(int builder, int building, TFObjectType buildingtype)
- */
-void OnBuildObject(Event event, const char[] name, bool dontBroadcast)
+public void TF2BH_OnBuildObject(int builder, int building, TFObjectType type)
 {
-	int builder = GetClientOfUserId(event.GetInt("userid"));
-
-	if (!IsValidClient(builder))
-	{
-		builder = -1;
-	}
-
-	int building = event.GetInt("index");
-
-	TFObjectType buildingtype = TF2_GetObjectType(building);
-
-	CallBuildObjectForward(builder, building, buildingtype);
-	
 	if (builder != -1)
 	{
 		int wrench = GetPlayerWeaponSlot(builder, 2);
 		char attr[256];
-		if (TF2CustAttr_GetString(wrench, "building upgrade cost", attr, sizeof(attr)))
+		if (IsValidEntity(wrench) && TF2CustAttr_GetString(wrench, "building upgrade cost", attr, sizeof(attr)))
 		{
-			UpdateBuildingInfo(building, buildingtype, attr);
+			UpdateBuildingInfo(building, type, attr);
 		}
 	}
 }
 
-/**
- * forward void TF2CA_OnBuildObject(int builder, int building, TFObjectType buildingtype)
- */
-void OnUpgradeObject(Event event, const char[] name, bool dontBroadcast)
+public void TF2BH_OnUpgradeObject(int upgrader, int builder, int building, TFObjectType type)
 {
-	int upgrader = GetClientOfUserId(event.GetInt("userid"));
-
-	if (!IsValidClient(upgrader))
-	{
-		upgrader = -1;
-	}
-
-	int building = event.GetInt("index");
-
-	int builder = TF2_GetObjectBuilder(building);
-
-	if (!IsValidClient(builder))
-	{
-		builder = -1;
-	}
-
-	TFObjectType buildingtype = TF2_GetObjectType(building);
-
-	CallUpgradeObjectForward(upgrader, builder, building, buildingtype);
-
 	if (builder != -1)
 	{
 		int wrench = GetPlayerWeaponSlot(builder, 2);
 		char attr[256];
-		if (TF2CustAttr_GetString(wrench, "building upgrade cost", attr, sizeof(attr)))
+		if (IsValidEntity(wrench) && TF2CustAttr_GetString(wrench, "building upgrade cost", attr, sizeof(attr)))
 		{
-			UpdateBuildingInfo(building, buildingtype, attr);
+			UpdateBuildingInfo(building, type, attr);
 		}
 	}
 }
 
-/**
- * forward void TF2CA_OnCarryObject(int builder, int building, TFObjectType buildingtype);
- */
-void OnCarryObject(Event event, const char[] name, bool dontBroadcast)
+public Action TF2BH_SentrygunSetModel(int builder, int sentry, char modelName[128])
 {
-	int builder = GetClientOfUserId(event.GetInt("userid"));
-
-	if (!IsValidClient(builder))
+	char newSentryModel[128];
+	if (!TF2CustAttr_ClientHasString(builder, "custom sentry model", newSentryModel, sizeof(newSentryModel)))
 	{
-		builder = -1;
+		return Plugin_Continue;
 	}
 
-	int building = event.GetInt("index");
+	if (StrContains(newSentryModel, ".mdl"))
+	{
+		if (FileExists(newSentryModel, true))
+		{
+			PrecacheModel(newSentryModel);
+			modelName = newSentryModel;
 
-	TFObjectType buildingtype = TF2_GetObjectType(building);
+			return Plugin_Changed;
+		}
+	}
 
-	CallCarryObjectForward(builder, building, buildingtype);
+	if (StrEqual(modelName, SENTRY_BLUEPRINT_MODEL))
+	{
+		StrCat(newSentryModel, sizeof(newSentryModel), "1_blueprint.mdl");
+		if (FileExists(newSentryModel, true))
+		{
+			PrecacheModel(newSentryModel);
+			modelName = newSentryModel;
+
+			return Plugin_Changed;
+		}
+	}
+	else if (StrEqual(modelName, SENTRY_LV1_MODEL))
+	{
+		StrCat(newSentryModel, sizeof(newSentryModel), "1.mdl");
+		if (FileExists(newSentryModel, true))
+		{
+			PrecacheModel(newSentryModel);
+			modelName = newSentryModel;
+
+			return Plugin_Changed;
+		}
+	}
+	else if (StrEqual(modelName, SENTRY_LV1_HEAVY_MODEL))
+	{
+		StrCat(newSentryModel, sizeof(newSentryModel), "1_heavy.mdl");
+		if (FileExists(newSentryModel, true))
+		{
+			PrecacheModel(newSentryModel);
+			modelName = newSentryModel;
+
+			return Plugin_Changed;
+		}
+	}
+	else if (StrEqual(modelName, SENTRY_LV2_MODEL))
+	{
+		StrCat(newSentryModel, sizeof(newSentryModel), "2.mdl");
+		if (FileExists(newSentryModel, true))
+		{
+			PrecacheModel(newSentryModel);
+			modelName = newSentryModel;
+
+			return Plugin_Changed;
+		}
+	}
+	else if (StrEqual(modelName, SENTRY_LV2_HEAVY_MODEL))
+	{
+		StrCat(newSentryModel, sizeof(newSentryModel), "2_heavy.mdl");
+		if (FileExists(newSentryModel, true))
+		{
+			PrecacheModel(newSentryModel);
+			modelName = newSentryModel;
+
+			return Plugin_Changed;
+		}
+	}
+	else if (StrEqual(modelName, SENTRY_LV3_MODEL))
+	{
+		StrCat(newSentryModel, sizeof(newSentryModel), "3.mdl");
+		if (FileExists(newSentryModel, true))
+		{
+			PrecacheModel(newSentryModel);
+			modelName = newSentryModel;
+
+			return Plugin_Changed;
+		}
+	}
+	else if (StrEqual(modelName, SENTRY_LV3_HEAVY_MODEL))
+	{
+		StrCat(newSentryModel, sizeof(newSentryModel), "3_heavy.mdl");
+		if (FileExists(newSentryModel, true))
+		{
+			PrecacheModel(newSentryModel);
+			modelName = newSentryModel;
+
+			return Plugin_Changed;
+		}
+	}
+
+	return Plugin_Continue;
 }
 
-/**
- * forward void TF2CA_OnDropObject(int builder, int building, TFObjectType buildingtype);
- */
-void OnDropObject(Event event, const char[] name, bool dontBroadcast)
+public Action TF2BH_DispenserSetModel(int builder, int dispenser, char modelName[128])
 {
-	int builder = GetClientOfUserId(event.GetInt("userid"));
-
-	if (!IsValidClient(builder))
+	char newDispenserModel[128];
+	if (!TF2CustAttr_ClientHasString(builder, "custom dispenser model", newDispenserModel, sizeof(newDispenserModel)))
 	{
-		builder = -1;
+		return Plugin_Continue;
 	}
 
-	int building = event.GetInt("index");
+	if (StrContains(newDispenserModel, ".mdl"))
+	{
+		if (FileExists(newDispenserModel, true))
+		{
+			PrecacheModel(newDispenserModel);
+			modelName = newDispenserModel;
 
-	TFObjectType buildingtype = TF2_GetObjectType(building);
+			return Plugin_Changed;
+		}
+	}
 
-	CallDropObjectForward(builder, building, buildingtype);
+	char dispenserModel[128];
+	strcopy(dispenserModel, sizeof(dispenserModel), newDispenserModel);
+
+	if (StrEqual(modelName, DISPENSER_BLUEPRINT_MODEL))
+	{
+		StrCat(newDispenserModel, sizeof(newDispenserModel), "_blueprint.mdl");
+		if (FileExists(newDispenserModel, true))
+		{
+			PrecacheModel(newDispenserModel);
+			modelName = newDispenserModel;
+
+			return Plugin_Changed;
+		}
+	}
+	else if (StrEqual(modelName, DISPENSER_LV1_LIGHT_MODEL))
+	{
+		StrCat(newDispenserModel, sizeof(newDispenserModel), "_light.mdl");
+		if (FileExists(newDispenserModel, true))
+		{
+			PrecacheModel(newDispenserModel);
+			modelName = newDispenserModel;
+
+			return Plugin_Changed;
+		}
+	}
+	else if (StrEqual(modelName, DISPENSER_LV1_MODEL))
+	{
+		StrCat(newDispenserModel, sizeof(newDispenserModel), ".mdl");
+		if (FileExists(newDispenserModel, true))
+		{
+			PrecacheModel(newDispenserModel);
+			modelName = newDispenserModel;
+
+			return Plugin_Changed;
+		}
+	}
+	else if (StrEqual(modelName, DISPENSER_LV2_LIGHT_MODEL))
+	{
+		StrCat(newDispenserModel, sizeof(newDispenserModel), "_lvl2_light.mdl");
+		if (FileExists(newDispenserModel, true))
+		{
+			PrecacheModel(newDispenserModel);
+			modelName = newDispenserModel;
+
+			return Plugin_Changed;
+		}
+		else
+		{
+			strcopy(newDispenserModel, sizeof(newDispenserModel), dispenserModel);
+			StrCat(newDispenserModel, sizeof(newDispenserModel), "_light.mdl");
+			if (FileExists(newDispenserModel, true))
+			{
+				PrecacheModel(newDispenserModel);
+				modelName = newDispenserModel;
+
+				return Plugin_Changed;
+			}
+		}
+	}
+	else if (StrEqual(modelName, DISPENSER_LV2_MODEL))
+	{
+		StrCat(newDispenserModel, sizeof(newDispenserModel), "_lvl2.mdl");
+		if (FileExists(newDispenserModel, true))
+		{
+			PrecacheModel(newDispenserModel);
+			modelName = newDispenserModel;
+
+			return Plugin_Changed;
+		}
+		else
+		{
+			strcopy(newDispenserModel, sizeof(newDispenserModel), dispenserModel);
+			StrCat(newDispenserModel, sizeof(newDispenserModel), ".mdl");
+			if (FileExists(newDispenserModel, true))
+			{
+				PrecacheModel(newDispenserModel);
+				modelName = newDispenserModel;
+
+				return Plugin_Changed;
+			}
+		}
+	}
+	else if (StrEqual(modelName, DISPENSER_LV3_LIGHT_MODEL))
+	{
+		StrCat(newDispenserModel, sizeof(newDispenserModel), "_lvl3_light.mdl");
+		if (FileExists(newDispenserModel, true))
+		{
+			PrecacheModel(newDispenserModel);
+			modelName = newDispenserModel;
+
+			return Plugin_Changed;
+		}
+		else
+		{
+			strcopy(newDispenserModel, sizeof(newDispenserModel), dispenserModel);
+			StrCat(newDispenserModel, sizeof(newDispenserModel), "_light.mdl");
+			if (FileExists(newDispenserModel, true))
+			{
+				PrecacheModel(newDispenserModel);
+				modelName = newDispenserModel;
+
+				return Plugin_Changed;
+			}
+		}
+	}
+	else if (StrEqual(modelName, DISPENSER_LV3_MODEL))
+	{
+		StrCat(newDispenserModel, sizeof(newDispenserModel), "_lvl3.mdl");
+		if (FileExists(newDispenserModel, true))
+		{
+			PrecacheModel(newDispenserModel);
+			modelName = newDispenserModel;
+
+			return Plugin_Changed;
+		}
+		else
+		{
+			strcopy(newDispenserModel, sizeof(newDispenserModel), dispenserModel);
+			StrCat(newDispenserModel, sizeof(newDispenserModel), ".mdl");
+			if (FileExists(newDispenserModel, true))
+			{
+				PrecacheModel(newDispenserModel);
+				modelName = newDispenserModel;
+
+				return Plugin_Changed;
+			}
+		}
+	}
+
+	return Plugin_Continue;
 }
 
-/**
- * forward void TF2CA_OnObjectRemoved(int builder, int building, TFObjectType buildingtype)
- */
-void OnObjectRemoved(Event event, const char[] name, bool dontBroadcast)
+public Action TF2BH_TeleporterSetModel(int builder, int teleporter, char modelName[128])
 {
-	int builder = GetClientOfUserId(event.GetInt("userid"));
-
-	if (!IsValidClient(builder))
+	char newteleportermodel[128];
+	if (!TF2CustAttr_ClientHasString(builder, "custom teleporter model", newteleportermodel, sizeof(newteleportermodel)))
 	{
-		builder = -1;
+		return Plugin_Continue;
 	}
 
-	int building = event.GetInt("index");
+	// If model path contains .mdl, just check file and apply.
+	if (StrContains(newteleportermodel, ".mdl"))
+	{
+		if (FileExists(newteleportermodel, true))
+		{
+			PrecacheModel(newteleportermodel);
+			modelName = newteleportermodel;
 
-	TFObjectType buildingtype = TF2_GetObjectType(building);
+			return Plugin_Changed;
+		}
+	}
 
-	CallObjectRemovedForward(builder, building, buildingtype);
+	// Save for more case..
+	char teleporterModel[128];
+	strcopy(teleporterModel, sizeof(teleporterModel), newteleportermodel);
+
+	if (StrEqual(modelName, TELEPORTER_BLUEPRINT_ENTER_MODEL))
+	{
+		StrCat(newteleportermodel, sizeof(newteleportermodel), "_blueprint_enter.mdl");
+		if (FileExists(newteleportermodel, true))
+		{
+			PrecacheModel(newteleportermodel);
+			modelName = newteleportermodel;
+
+			return Plugin_Changed;
+		}
+		else
+		{
+			strcopy(newteleportermodel, sizeof(newteleportermodel), teleporterModel);
+			StrCat(newteleportermodel, sizeof(newteleportermodel), "_blueprint.mdl");
+			if (FileExists(newteleportermodel, true))
+			{
+				PrecacheModel(newteleportermodel);
+				modelName = newteleportermodel;
+
+				return Plugin_Changed;
+			}
+		}
+	}
+	else if (StrEqual(modelName, TELEPORTER_BLUEPRINT_EXIT_MODEL))
+	{
+		StrCat(newteleportermodel, sizeof(newteleportermodel), "_blueprint_exit.mdl");
+		if (FileExists(newteleportermodel, true))
+		{
+			PrecacheModel(newteleportermodel);
+			modelName = newteleportermodel;
+
+			return Plugin_Changed;
+		}
+		else
+		{
+			strcopy(newteleportermodel, sizeof(newteleportermodel), teleporterModel);
+			StrCat(newteleportermodel, sizeof(newteleportermodel), "_blueprint.mdl");
+			if (FileExists(newteleportermodel, true))
+			{
+				PrecacheModel(newteleportermodel);
+				modelName = newteleportermodel;
+
+				return Plugin_Changed;
+			}
+		}
+	}
+	else if (StrEqual(modelName, TELEPORTER_LIGHT_MODEL))
+	{
+		StrCat(newteleportermodel, sizeof(newteleportermodel), "_light.mdl");
+		if (FileExists(newteleportermodel, true))
+		{
+			PrecacheModel(newteleportermodel);
+			modelName = newteleportermodel;
+
+			return Plugin_Changed;
+		}
+	}
+	else if (StrEqual(modelName, TELEPORTER_MODEL))
+	{
+		StrCat(newteleportermodel, sizeof(newteleportermodel), ".mdl");
+		if (FileExists(newteleportermodel, true))
+		{
+			PrecacheModel(newteleportermodel);
+			modelName = newteleportermodel;
+
+			return Plugin_Changed;
+		}
+	}
+
+	return Plugin_Continue;
 }
 
-/**
- * forward void TF2CA_OnObjectRemoved(int builder, int building, TFObjectType buildingtype)
- */
-void OnObjectDestroyed(Event event, const char[] name, bool dontBroadcast)
+public Action TF2BH_ObjectGetMaxHealth(int builder, int building, TFObjectType type, int &maxHealth)
 {
-	int builder = GetClientOfUserId(event.GetInt("userid"));
+	int wrench = GetPlayerWeaponSlot(builder, 2);
+	int level = GetEntProp(building, Prop_Send, "m_iUpgradeLevel");
 
-	if (!IsValidClient(builder))
+	if (IsValidEntity(wrench))
 	{
-		builder = -1;
+		char attr[512];
+		if (TF2CustAttr_GetString(wrench, "override building health", attr, sizeof(attr)))
+		{
+			switch (type)
+			{
+				case TFObject_Sentry:
+				{
+					if (ReadIntVar(attr, "sentry"))
+					{
+						switch (level)
+						{
+							case 1:
+							{
+								maxHealth = ReadIntVar(attr, "sentry1", 150);
+								return Plugin_Changed;
+							}
+							case 2:
+							{
+								maxHealth = ReadIntVar(attr, "sentry2", 180);
+								return Plugin_Changed;
+							}
+							case 3:
+							{
+								maxHealth = ReadIntVar(attr, "sentry3", 216);
+								return Plugin_Changed;
+							}
+						}
+					}
+				}
+				case TFObject_Dispenser:
+				{
+					if (ReadIntVar(attr, "dispenser"))
+					{
+						switch (level)
+						{
+							case 1:
+							{
+								maxHealth = ReadIntVar(attr, "dispenser1", 150);
+								return Plugin_Changed;
+							}
+							case 2:
+							{
+								maxHealth = ReadIntVar(attr, "dispenser2", 180);
+								return Plugin_Changed;
+							}
+							case 3:
+							{
+								maxHealth = ReadIntVar(attr, "dispenser3", 216);
+								return Plugin_Changed;
+							}
+						}
+					}
+				}
+				case TFObject_Teleporter:
+				{
+					if (ReadIntVar(attr, "teleporter"))
+					{
+						switch (level)
+						{
+							case 1:
+							{
+								maxHealth = ReadIntVar(attr, "teleporter1", 150);
+								return Plugin_Changed;
+							}
+							case 2:
+							{
+								maxHealth = ReadIntVar(attr, "teleporter2", 180);
+								return Plugin_Changed;
+							}
+							case 3:
+							{
+								maxHealth = ReadIntVar(attr, "teleporter3", 216);
+								return Plugin_Changed;
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
-	int attacker = GetClientOfUserId(event.GetInt("attacker"));
-
-	if (!IsValidClient(attacker))
-	{
-		attacker = -1;
-	}
-
-	int assister = GetClientOfUserId(event.GetInt("assister"));
-
-	if (!IsValidClient(assister))
-	{
-		assister = -1;
-	}
-
-	int weapon = event.GetInt("weaponid");
-
-	int building = event.GetInt("index");
-
-	bool wasbuilding = event.GetBool("was_building");
-
-	TFObjectType buildingtype = TF2_GetObjectType(building);
-
-	CallObjectDestroyedForward(builder, attacker, assister, weapon, building, buildingtype, wasbuilding);
+	return Plugin_Continue;
 }
 
-/**
- * forward void TF2CA_OnObjectDetonated(int builder, int building, TFObjectType buildingtype);
- */
-void OnObjectDetonated(Event event, const char[] name, bool dontBroadcast)
+public Action TF2BH_DispenserGetHealRate(int builder, int dispenser, float &healrate)
 {
-	int builder = GetClientOfUserId(event.GetInt("userid"));
-
-	if (!IsValidClient(builder))
-	{
-		builder = -1;
-	}
-
-	int building = event.GetInt("index");
-
-	TFObjectType buildingtype = TF2_GetObjectType(building);
-
-	CallObjectDetonatedForward(builder, building, buildingtype);
+	healrate = TF2CustAttr_HookValueFloatOnClient(healrate, "dispenser healrate multiplier", builder);
+	return Plugin_Changed;
 }
 
-/////////////////////////////
-// Stock                   //
-/////////////////////////////
-
-stock void SetSentryRocketModel(int entity, char[] attr)
+public Action TF2BH_PlayerCalculateObjectCost(int builder, TFObjectType type, int &cost)
 {
-	if (FileExists(attr, true))
+	float returncost = float(cost);
+	if (type == TFObject_Dispenser)
 	{
-		PrecacheModel(attr);
-		SetEntityModel(entity, attr);
+		returncost = TF2CustAttr_HookValueFloatOnClient(returncost, "mod dispenser cost", builder);
 	}
+	else if (type == TFObject_Sentry)
+	{
+		returncost = TF2CustAttr_HookValueFloatOnClient(returncost, "mod sentry cost", builder);
+	}
+
+	cost = RoundFloat(returncost);
+	return Plugin_Changed;
 }
 
-stock bool IsValidClient(int client, bool replaycheck = true)
+public Action TF2BH_ObjectGetConstructionMultiplier(int builder, int building, TFObjectType type, float &multiplier)
 {
-	if (client <= 0 || client > MaxClients)
+	if (type == TFObject_Dispenser)
+	{
+		multiplier = TF2CustAttr_HookValueFloatOnClient(multiplier, "engineer dispenser build rate multiplier", builder);
+		return Plugin_Changed;
+	}
+
+	return Plugin_Continue;
+}
+
+static any Native_BuilderHasCustomDispenser(Handle plugin, int nParams)
+{
+	int client = GetNativeInGameClient(1);
+
+	int len;
+	GetNativeStringLength(2, len);
+	if (len <= 0)
+	{
 		return false;
+	}
+	char[] value = new char[len + 1];
+	GetNativeString(2, value, len + 1);
 
-	if (!IsClientInGame(client))
-		return false;
-
-	if (GetEntProp(client, Prop_Send, "m_bIsCoaching"))
-		return false;
-
-	if (replaycheck && (IsClientSourceTV(client) || IsClientReplay(client)))
-		return false;
-
-	return true;
+	char dispenserType[CUSTOM_BUILDING_TYPE_NAME_LENGTH];
+	Builder(client).GetCustomDispenserType(dispenserType, sizeof(dispenserType));
+	return strcmp(dispenserType, value) == 0;
 }
 
-/////////////////////////////
-// Utility                 //
-/////////////////////////////
+static any Native_BuilderHasCustomSentry(Handle plugin, int nParams)
+{
+	int client = GetNativeInGameClient(1);
+
+	int len;
+	GetNativeStringLength(2, len);
+	if (len <= 0)
+	{
+		return false;
+	}
+	char[] value = new char[len + 1];
+	GetNativeString(2, value, len + 1);
+
+	char sentryType[CUSTOM_BUILDING_TYPE_NAME_LENGTH];
+	Builder(client).GetCustomSentryType(sentryType, sizeof(sentryType));
+	return strcmp(sentryType, value) == 0;
+}
+
+static any Native_BuilderHasCustomTeleporter(Handle plugin, int nParams)
+{
+	int client = GetNativeInGameClient(1);
+
+	int len;
+	GetNativeStringLength(2, len);
+	if (len <= 0)
+	{
+		return false;
+	}
+	char[] value = new char[len + 1];
+	GetNativeString(2, value, len + 1);
+
+	char teleporterType[CUSTOM_BUILDING_TYPE_NAME_LENGTH];
+	Builder(client).GetCustomTeleporterType(teleporterType, sizeof(teleporterType));
+	return strcmp(teleporterType, value) == 0;
+}
 
 void UpdateBuildingInfo(int building, TFObjectType type, const char[] attr)
 {
@@ -497,17 +747,28 @@ void UpdateBuildingInfo(int building, TFObjectType type, const char[] attr)
 	}
 }
 
-any DetonateObjectOfType(int client, int type, int mode = 0, bool silent = false)
+stock void SetSentryRocketModel(int entity, char[] attr)
 {
-	return SDKCall(g_SDKCallDetonateObjectOfType, client, type, mode, silent);
+	if (FileExists(attr, true))
+	{
+		PrecacheModel(attr);
+		SetEntityModel(entity, attr);
+	}
 }
 
-any PlayerGetObjectOfType(int owner, int objectType, int objectMode)
+stock bool IsValidClient(int client, bool replaycheck = true)
 {
-	return SDKCall(g_SDKCallPlayerGetObjectOfType, owner, objectType, objectMode);
-}
+	if (client <= 0 || client > MaxClients)
+		return false;
 
-any DestroyScreens(int building)
-{
-	return SDKCall(g_SDKCallBuildingDestroyScreens, building);
+	if (!IsClientInGame(client))
+		return false;
+
+	if (GetEntProp(client, Prop_Send, "m_bIsCoaching"))
+		return false;
+
+	if (replaycheck && (IsClientSourceTV(client) || IsClientReplay(client)))
+		return false;
+
+	return true;
 }

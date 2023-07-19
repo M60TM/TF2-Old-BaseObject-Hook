@@ -6,6 +6,7 @@
 #pragma newdecls required
 
 #include <tf2attributes>
+#include <tf2bh>
 #include <tf2ca_custom_building>
 #include <stocksoup/tf/entity_prop_stocks>
 
@@ -48,7 +49,7 @@ public Plugin myinfo = {
 	name = "[TF2] Custom Attribute: Speed Pad",
 	author = "Original plugin from Starblaster 64, Ported and Modified by Sandy",
 	description = "",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = ""
 }
 
@@ -124,14 +125,14 @@ public Action HookSound(int clients[MAXPLAYERS], int &numClients, char sample[PL
 	return Plugin_Continue;
 }
 
-public void TF2CA_OnBuildObject(int builder, int building, TFObjectType buildingtype)
+public void TF2BH_OnBuildObject(int builder, int building, TFObjectType type)
 {
 	if (builder == -1)
 	{
 		return;
 	}
 	
-	if (buildingtype != TFObject_Teleporter)
+	if (type != TFObject_Teleporter)
 	{
 		return;
 	}

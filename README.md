@@ -1,17 +1,18 @@
-# TF2CA-Custom-Building
-A few forwards, natives, custom attributes for custom building.
+# TF2-BaseObject-Hook
+Forwards and Natives for handling object.
 
-## Features
-- Automatically detonate a building when the current custom building type is different from the custom building type of the builder
+## Dependency
+- sourcemod 1.11+
+- [stocksoup (compile only)](https://github.com/nosoop/stocksoup)
+
+# TF2CA-Custom-Building
+Provide some custom attributes based on TF2-BaseObject-Hook.
 
 ## Dependency
 - sourcemod 1.11+
 - [TFCustAttr](https://github.com/nosoop/SM-TFCustAttr)
 - [TF2Utils](https://github.com/nosoop/SM-TFUtils)
 - [stocksoup (compile only)](https://github.com/nosoop/stocksoup)
-
-## Also Support
-- [Custom Weapon X](https://github.com/nosoop/SM-TFCustomWeaponsX)
 
 ## Usage
 ```
@@ -22,18 +23,19 @@ A few forwards, natives, custom attributes for custom building.
 #pragma newdecls required
 
 #include <tf_custom_attributes>
+#include <tf2bh>
 #include <tf2ca_custom_building>
 
 #define ATTR_TEST "build test"
 
-public void TF2CA_OnBuildObject(int builder, int building, TFObjectType buildingtype)
+public void TF2BH_OnBuildObject(int builder, int building, TFObjectType type)
 {
 	if (builder == -1)
 	{
 		return;
 	}
 	
-	if (buildingtype != TFObject_Teleporter)
+	if (type != TFObject_Teleporter)
 	{
 		return;
 	}
@@ -43,26 +45,6 @@ public void TF2CA_OnBuildObject(int builder, int building, TFObjectType building
 		DoSomething(builder, building);
 	}
 }
-```
-
-## Natives
-```
-native bool TF2CA_BuilderHasCustomDispenser(int client, const char[] value);
-```
-```
-native bool TF2CA_BuilderHasCustomSentry(int client, const char[] value);
-```
-```
-native bool TF2CA_BuilderHasCustomTeleporter(int client, const char[] value);
-```
-```
-native void TF2CA_DetonateObjectOfType(int client, int type, int mode = 0, bool silent = false);
-```
-```
-native int TF2CA_PlayerGetObjectOfType(int owner, int objectType, int objectMode);
-```
-```
-native void TF2CA_DestroyScreens(int building);
 ```
 
 ----

@@ -1,12 +1,10 @@
 #pragma semicolon 1
 #include <sourcemod>
 
-#include <tf2>
-#include <tf2_stocks>
-
 #pragma newdecls required
 
 #include <tf2utils>
+#include <tf2bh>
 #include <tf2ca_custom_building>
 
 #define ATTR_AMP "build amplifier"
@@ -15,11 +13,11 @@ public Plugin myinfo = {
 	name = "[TF2] Custom Attribute: Amplifier",
 	author = "Sandy",
 	description = "Mini Crits!",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = ""
 }
 
-public void TF2CA_DispenserStartHealing(int builder, int building, int patient)
+public void TF2BH_DispenserStartHealing(int builder, int building, int patient)
 {
     if (builder == -1)
 	{
@@ -35,7 +33,7 @@ public void TF2CA_DispenserStartHealing(int builder, int building, int patient)
     }
 }
 
-public void TF2CA_DispenserStopHealing(int builder, int building, int patient)
+public void TF2BH_DispenserStopHealing(int builder, int building, int patient)
 {
     if (patient != -1)
     {

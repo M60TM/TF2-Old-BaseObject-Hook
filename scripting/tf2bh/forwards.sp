@@ -17,21 +17,21 @@ static GlobalForward g_OnSentrySoundForward;
 
 void Setup_Forwards()
 {
-	g_OnBuildObjectForward = new GlobalForward("TF2CA_OnBuildObject", ET_Event, Param_Cell, Param_Cell, Param_Cell);
+	g_OnBuildObjectForward = new GlobalForward("TF2BH_OnBuildObject", ET_Event, Param_Cell, Param_Cell, Param_Cell);
 
-	g_OnUpgradeObjectForward = new GlobalForward("TF2CA_OnUpgradeObject", ET_Event, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
+	g_OnUpgradeObjectForward = new GlobalForward("TF2BH_OnUpgradeObject", ET_Event, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
 
-	g_OnCarryObjectForward = new GlobalForward("TF2CA_OnCarryObject", ET_Event, Param_Cell, Param_Cell, Param_Cell);
+	g_OnCarryObjectForward = new GlobalForward("TF2BH_OnCarryObject", ET_Event, Param_Cell, Param_Cell, Param_Cell);
 
-	g_OnDropObjectForward = new GlobalForward("TF2CA_OnDropObject", ET_Event, Param_Cell, Param_Cell, Param_Cell);
+	g_OnDropObjectForward = new GlobalForward("TF2BH_OnDropObject", ET_Event, Param_Cell, Param_Cell, Param_Cell);
 
-	g_OnObjectRemovedForward = new GlobalForward("TF2CA_OnObjectRemoved", ET_Event, Param_Cell, Param_Cell, Param_Cell);
+	g_OnObjectRemovedForward = new GlobalForward("TF2BH_OnObjectRemoved", ET_Event, Param_Cell, Param_Cell, Param_Cell);
 
-	g_OnObjectDestroyedForward = new GlobalForward("TF2CA_OnObjectDestroyed", ET_Event, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
+	g_OnObjectDestroyedForward = new GlobalForward("TF2BH_OnObjectDestroyed", ET_Event, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_Cell);
 
-	g_OnObjectDetonatedForward = new GlobalForward("TF2CA_OnObjectDetonated", ET_Event, Param_Cell, Param_Cell, Param_Cell);
+	g_OnObjectDetonatedForward = new GlobalForward("TF2BH_OnObjectDetonated", ET_Event, Param_Cell, Param_Cell, Param_Cell);
 
-	g_OnSentrySoundForward = new GlobalForward("TF2CA_SentryEmitSound", ET_Hook, Param_Cell, Param_Cell, Param_String, Param_CellByRef, Param_FloatByRef, Param_CellByRef, Param_CellByRef);
+	g_OnSentrySoundForward = new GlobalForward("TF2BH_SentrygunEmitSound", ET_Hook, Param_Cell, Param_Cell, Param_String, Param_CellByRef, Param_FloatByRef, Param_CellByRef, Param_CellByRef);
 }
 
 void CallBuildObjectForward(int builder, int building, TFObjectType buildingtype)
