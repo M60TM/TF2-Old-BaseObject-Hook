@@ -148,18 +148,21 @@
 		{
 			"CObjectDispenser::StopHealing()"
 			{
+				// first call in "CObjectDispenser::ResetHealingTargets()", second call in "CObjectDispenser::DispenseThink()" that include "DispenseContext"
 				"library"	"server"
 				"linux"		"@_ZN16CObjectDispenser11StopHealingEP11CBaseEntity"
 				"windows"	"\x55\x8B\xEC\x53\x8B\x5D\x08\x57\x53\x8B\xF9\xE8\x2A\x2A\x2A\x2A\x84\xC0"
 			}
 			"CTFPlayerShared::CalculateObjectCost()"
 			{
+
 				"library"	"server"
 				"linux"		"@_ZN15CTFPlayerShared19CalculateObjectCostEP9CTFPlayeri"
 				"windows"	"\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74\x2A\x80\xB8\x7A\x09\x00\x00\x00\x74\x2A\x80\xB8\x8D\x03\x00\x00\x00"
 			}
 			"CTFPlayer::DetonateObjectOfType()"
 			{
+				// unique x-ref to string "object_removed"
 				"library"	"server"
 				"linux"		"@_ZN9CTFPlayer20DetonateObjectOfTypeEiib"
 				"windows"	"\x55\x8B\xEC\x51\x53\x57\xFF\x75\x0C\x8B\xD9\xFF\x75\x08\x89\x5D\xFC\xE8\x2A\x2A\x2A\x2A\x8B\xF8"
@@ -169,31 +172,28 @@
 				// first call in "CTFPlayer::DetonateObjectOfType()"
 				"library"	"server"
 				"linux"		"@_ZNK9CTFPlayer15GetObjectOfTypeEii"
-				"windows"	"\x55\x8B\xEC\x51\x53\x8B\xC1\x56\x57\x33\xFF\x89\x45\xFC\x8B\x98\x2A\x22\x00\x00"
+				"windows"	"\x55\x8B\xEC\x51\x53\x8B\xC1\x56\x57\x33\xFF\x89\x45\xFC\x8B\x98\x44\x23\x00\x00"
 			}
 			"CBaseObject::DestroyScreens()"
 			{
+				// second call in "CBaseObject::MakeCarriedObject( CTFPlayer *pCarrier )", not in if-else if.
 				"library"	"server"
 				"linux"		"@_ZN11CBaseObject14DestroyScreensEv"
-				"windows"	"\x56\x57\x8B\xF9\x8B\xB7\x2A\x09\x00\x00"
+				"windows"	"\x56\x57\x8B\xF9\x8B\xB7\xEC\x09\x00\x00"
 			}
 			"CBaseObject::GetConstructionMultiplier()"
 			{
+				// It calls "IsUsingReverseBuild()" and return -1.0 at first. Use function calls to find this.
 				"library" "server"
-				"windows" "\x55\x8B\xEC\x83\xEC\x0C\x53\x8B\xD9\x89\x5D\xF8"
 				"linux"   "@_ZN11CBaseObject25GetConstructionMultiplierEv"
+				"windows" "\x55\x8B\xEC\x83\xEC\x0C\x53\x8B\xD9\x89\x5D\xF8"
 			}
 			"CObjectDispenser::CouldHealTarget"
 			{
+				// fourteen call in "CObjectDispenser::DispenseThink()"
 				"library"	"server"
 				"linux"		"@_ZN16CObjectDispenser15CouldHealTargetEP11CBaseEntity"
 				"windows"	"\x55\x8B\xEC\x56\x8B\x75\x08\x57\x8B\xF9\x8B\x87\x38\x01\x00\x00"
-			}
-			"CObjectSentrygun::ValidTargetPlayer"
-			{
-				"library"	"server"
-				"linux"		"@_ZN16CObjectSentrygun17ValidTargetPlayerEP9CTFPlayerRK6VectorS4_"
-				"windows"	"\x55\x8B\xEC\x51\x53\x8B\x5D\x08\x57\x89\x4D\xFC"
 			}
 		}
 
