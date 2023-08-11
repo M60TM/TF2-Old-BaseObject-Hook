@@ -88,7 +88,7 @@ public Action EurekaTeleport(int iClient, const char[] szCommand, int nArgs)
 		if (iDest != 1 || !GetCmdArgs())	//If teleport destination is not 1 or unspecified (Spawn)
 			return Plugin_Continue;
 		
-		int teleexit = TF2CA_PlayerGetObjectOfType(iClient, 1, 1);
+		int teleexit = TF2BH_PlayerGetObjectOfType(iClient, 1, 1);
 		if (IsValidEntity(teleexit) && TF2CA_BuilderHasCustomTeleporter(iClient, ATTR_SPEED_PAD))
 		{
 			EmitGameSoundToClient(iClient, "Player.UseDeny", iClient);
