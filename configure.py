@@ -10,10 +10,10 @@ plugins = [
 # plugin names from previous list will be copied automatically
 copy_files = [
 	'gamedata/tf2.baseobject.txt',
+	'gamedata/tf2.teleporters.txt',
 	'scripting/tf2ca_custom_building/methodmaps.sp',
 	'scripting/tf2bh/dhooks.sp',
 	'scripting/tf2bh/natives.sp',
-	'scripting/tf2bh/forwards.sp',
 	'scripting/tf2bh/utils.sp',
 	'scripting/include/tf2bh.inc',
 	'scripting/include/tf2ca_custom_building.inc',

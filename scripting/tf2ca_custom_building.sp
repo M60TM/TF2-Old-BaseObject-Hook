@@ -24,9 +24,9 @@ public Plugin myinfo =
 	name		= "[TF2CA] Custom Building",
 	author		= "Sandy and Monera",
 	description = "Custom Attributes For Building.",
-	version		= "1.6.0",
+	version		= "1.7.0",
 	url			= "https://github.com/M60TM/TF2CA-Custom-Building"
-}
+};
 
 public APLRes AskPluginLoad2(Handle self, bool late, char[] error, int maxlen)
 {
@@ -42,6 +42,7 @@ public APLRes AskPluginLoad2(Handle self, bool late, char[] error, int maxlen)
 public void OnPluginStart()
 {
 	HookEvent("post_inventory_application", OnInventoryAppliedPost);
+	HookEvent("player_builtobject", OnPlayerBuiltObject);
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
@@ -161,22 +162,25 @@ void OnInventoryAppliedPost(Event event, const char[] name, bool dontBroadcast)
 	Builder(client).SetCustomTeleporterType(attr[2]);
 }
 
-public void TF2BH_OnBuildObject(int builder, int building, TFObjectType type)
+public void OnPlayerBuiltObject(Event event, const char[] name, bool dontBroadcast)
 {
-	if (builder != -1)
+	int builder = GetClientOfUserId(event.GetInt("userid"));
+	if (builder)
 	{
 		int wrench = GetPlayerWeaponSlot(builder, 2);
 		char attr[256];
 		if (IsValidEntity(wrench) && TF2CustAttr_GetString(wrench, "building upgrade cost", attr, sizeof(attr)))
 		{
+			int building = event.GetInt("index");
+			TFObjectType type = view_as<TFObjectType>(event.GetInt("object"));
 			UpdateBuildingInfo(building, type, attr);
 		}
 	}
 }
 
-public void TF2BH_OnUpgradeObject(int upgrader, int builder, int building, TFObjectType type)
+public void TF2BH_ObjectFinishUpgrading(int builder, int building, TFObjectType type)
 {
-	if (builder != -1)
+	if (IsValidClient(builder))
 	{
 		int wrench = GetPlayerWeaponSlot(builder, 2);
 		char attr[256];
@@ -189,6 +193,9 @@ public void TF2BH_OnUpgradeObject(int upgrader, int builder, int building, TFObj
 
 public Action TF2BH_SentrygunSetModel(int builder, int sentry, char modelName[128])
 {
+	if (!IsValidClient(builder))
+		return Plugin_Continue;
+	
 	char newSentryModel[128];
 	if (!TF2CustAttr_ClientHasString(builder, "custom sentry model", newSentryModel, sizeof(newSentryModel)))
 	{
@@ -289,6 +296,9 @@ public Action TF2BH_SentrygunSetModel(int builder, int sentry, char modelName[12
 
 public Action TF2BH_DispenserSetModel(int builder, int dispenser, char modelName[128])
 {
+	if (!IsValidClient(builder))
+		return Plugin_Continue;
+	
 	char newDispenserModel[128];
 	if (!TF2CustAttr_ClientHasString(builder, "custom dispenser model", newDispenserModel, sizeof(newDispenserModel)))
 	{
@@ -440,6 +450,9 @@ public Action TF2BH_DispenserSetModel(int builder, int dispenser, char modelName
 
 public Action TF2BH_TeleporterSetModel(int builder, int teleporter, char modelName[128])
 {
+	if (!IsValidClient(builder))
+		return Plugin_Continue;
+	
 	char newteleportermodel[128];
 	if (!TF2CustAttr_ClientHasString(builder, "custom teleporter model", newteleportermodel, sizeof(newteleportermodel)))
 	{
@@ -536,6 +549,9 @@ public Action TF2BH_TeleporterSetModel(int builder, int teleporter, char modelNa
 
 public Action TF2BH_ObjectGetMaxHealth(int builder, int building, TFObjectType type, int &maxHealth)
 {
+	if (!IsValidClient(builder))
+		return Plugin_Continue;
+	
 	int wrench = GetPlayerWeaponSlot(builder, 2);
 	int level = GetEntProp(building, Prop_Send, "m_iUpgradeLevel");
 
@@ -627,12 +643,18 @@ public Action TF2BH_ObjectGetMaxHealth(int builder, int building, TFObjectType t
 
 public Action TF2BH_DispenserGetHealRate(int builder, int dispenser, float &healrate)
 {
+	if (!IsValidClient(builder))
+		return Plugin_Continue;
+	
 	healrate = TF2CustAttr_HookValueFloatOnClient(healrate, "dispenser healrate multiplier", builder);
 	return Plugin_Changed;
 }
 
 public Action TF2BH_PlayerCalculateObjectCost(int builder, TFObjectType type, int &cost)
 {
+	if (!IsValidClient(builder))
+		return Plugin_Continue;
+	
 	float returncost = float(cost);
 	if (type == TFObject_Dispenser)
 	{
@@ -649,6 +671,9 @@ public Action TF2BH_PlayerCalculateObjectCost(int builder, TFObjectType type, in
 
 public Action TF2BH_ObjectGetConstructionMultiplier(int builder, int building, TFObjectType type, float &multiplier)
 {
+	if (!IsValidClient(builder))
+		return Plugin_Continue;
+	
 	if (type == TFObject_Dispenser)
 	{
 		multiplier = TF2CustAttr_HookValueFloatOnClient(multiplier, "engineer dispenser build rate multiplier", builder);

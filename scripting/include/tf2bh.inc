@@ -41,10 +41,12 @@
  * @param client     Player to check against.
  * @param type       Type of building to destroy.
  * @param mode       Mode of building to destroy.
- * @param silent     Destroy buildings silently.
+ * @param force      Force to destroy buildings. If true, this skips the sapper / plasma disabled checks.
  * @noreturn         
+ * 
+ * @error            Invalid client index.
  */
-native void TF2BH_PlayerDetonateObjectOfType(int client, int type, int mode = 0, bool silent = false);
+native void TF2BH_PlayerDetonateObjectOfType(int client, int type, int mode = 0, bool force = false);
 
 /**
  * Get player's spectific object.
@@ -53,6 +55,8 @@ native void TF2BH_PlayerDetonateObjectOfType(int client, int type, int mode = 0,
  * @param objectType     Type of object to find.
  * @param objectMode     Mode of object to find.
  * @return               Return client's object.
+ * 
+ * @error                Invalid client index.
  */
 native int TF2BH_PlayerGetObjectOfType(int client, int objectType, int objectMode);
 
@@ -64,92 +68,20 @@ native int TF2BH_PlayerGetObjectOfType(int client, int objectType, int objectMod
  */
 native void TF2BH_ObjectDestroyScreens(int building);
 
+/**
+ * Remove All Objects of spectific client.
+ * 
+ * @param client      Client index to remove it's own objects.
+ * @param explode     Explode object instead remove.
+ * @noreturn          
+ * 
+ * @error             Invalid client index.
+ */
+native void TF2BH_PlayerRemoveAllObjects(int client, bool explode);
+
 /////////////////////////////
 // Forward                 //
 /////////////////////////////
-
-/**
- * Called when player build an object.
- * 
- * @param builder				object builder.
- * @param building				object's index.
- * @param type					object's type.
- */
-forward void TF2BH_OnBuildObject(int builder, int building, TFObjectType type);
-
-/**
- * Called when player upgrade an object.
- * 
- * @param upgrader				object upgrader.
- * @param builder				object builder.
- * @param building				object's index.
- * @param type					object's type.
- */
-forward void TF2BH_OnUpgradeObject(int upgrader, int builder, int building, TFObjectType type);
-
-/**
- * Called when player carry an object.
- * 
- * @param builder				object builder.
- * @param building				object's index.
- * @param type					object's type.
- */
-forward void TF2BH_OnCarryObject(int builder, int building, TFObjectType type);
-
-/**
- * Called when player drop an object.
- * 
- * @param builder				object builder.
- * @param building				object's index.
- * @param type					object's type.
- */
-forward void TF2BH_OnDropObject(int builder, int building, TFObjectType type);
-
-/**
- * Called when object is removed.
- * 
- * @param builder				object builder.
- * @param building				object's index.
- * @param type					object's type.
- */
-forward void TF2BH_OnObjectRemoved(int builder, int building, TFObjectType type);
-
-/**
- * Called when object is destroyed.
- * 
- * @param builder		    	object builder.
- * @param attacker		  		object destoryer.
- * @param assister      		assister of destroying object.
- * @param weapon        		weapon was used to destroy object. 
- * @param building				object's index.
- * @param type					object's type.
- * @param wasbuilding   		check object was building when destroyed.
- */
-forward void TF2BH_OnObjectDestroyed(int builder, int attacker, int assister, int weapon, int building, TFObjectType type, bool wasbuilding);
-
-/**
- * Called when object is removed.
- * 
- * @param builder				object builder.
- * @param building				object's index.
- * @param type					object's type.
- */
-forward void TF2BH_OnObjectDetonated(int builder, int building, TFObjectType type);
-
-/**
- * Called when sentrygun emits sound.
- * 
- * @param sentry		sentry index.
- * @param builder		builder index.
- * @param sample        Sound file name relative to the "sound" folder.
- * @param channel       Channel emitting the sound.
- * @param volume        Sound volume.
- * @param level         Sound level.
- * @param pitch         Sound pitch.
- * 
- * @return
- */
-forward Action TF2BH_SentrygunEmitSound(int sentry, int builder, char sample[PLATFORM_MAX_PATH], int &channel, float &volume, int &level, int &pitch);
 
 /**
  * Called when object go active.

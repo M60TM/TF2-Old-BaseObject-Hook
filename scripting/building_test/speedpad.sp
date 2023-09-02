@@ -13,8 +13,7 @@
 #define ATTR_SPEED_PAD "build speed pad"
 #define ATTR_MULT_TELEPORTER_RECHARGE_RATE "mult_teleporter_recharge_rate"
 
-enum //Teleporter states
-{
+enum {
 	TELEPORTER_STATE_BUILDING = 0,				// Building, not active yet
 	TELEPORTER_STATE_IDLE,						// Does not have a matching teleporter yet
 	TELEPORTER_STATE_READY,						// Found match, charged and ready
@@ -23,22 +22,20 @@ enum //Teleporter states
 	TELEPORTER_STATE_RECEIVING_RELEASE,
 	TELEPORTER_STATE_RECHARGING,				// Waiting for recharge
 	TELEPORTER_STATE_UPGRADING					// Upgrading
-}
+}; //Teleporter states
 
 static char g_szOffsetStartProp[64];
 static int g_iOffsetMatchingTeleporter = -1;
 
 // grab from 2018 leak lol
-float g_flTeleporterRechargeTimes[4] =
-{
+float g_flTeleporterRechargeTimes[4] = {
 	0.0,
 	10.0,
 	5.0,
 	3.0
 };
 
-float g_flSpeedPadDurationTimes[4] =
-{
+float g_flSpeedPadDurationTimes[4] = {
 	0.0,
 	3.0,
 	4.5,
@@ -51,10 +48,9 @@ public Plugin myinfo = {
 	description = "",
 	version = "1.0.1",
 	url = ""
-}
+};
 
-public void OnPluginStart()
-{
+public void OnPluginStart() {
 	Handle hGameConf = LoadGameConfigFile("tf2.teleporters");
 	if (!hGameConf) {
 		SetFailState("Failed to load gamedata (tf2.teleporters).");
@@ -63,8 +59,7 @@ public void OnPluginStart()
 	bool bFoundProp = GameConfGetKeyValue(hGameConf, "StartProp", g_szOffsetStartProp, sizeof(g_szOffsetStartProp));
 	g_iOffsetMatchingTeleporter = GameConfGetOffset(hGameConf, "m_hMatchingTeleporter");
 	
-	if (!bFoundProp || g_iOffsetMatchingTeleporter < 0)
-	{
+	if (!bFoundProp || g_iOffsetMatchingTeleporter < 0) {
 		SetFailState("[EngiPads] Unable to get m_hMatchingTeleporter offset from 'tf2.teleporters.txt'. Check gamedata!");
 	}
 	
@@ -73,15 +68,15 @@ public void OnPluginStart()
 	AddCommandListener(EurekaTeleport, "eureka_teleport");
 
 	AddNormalSoundHook(HookSound);
+
+	HookEvent("player_builtobject", OnBuildObject);
 }
 
 /**
  * Prevent Eureka Effect Teleport.
  */
-public Action EurekaTeleport(int iClient, const char[] szCommand, int nArgs)
-{
-	if (IsValidClient(iClient) && IsPlayerAlive(iClient))
-	{
+public Action EurekaTeleport(int iClient, const char[] szCommand, int nArgs) {
+	if (IsValidClient(iClient) && IsPlayerAlive(iClient)) {
 		char arg[8]; GetCmdArg(1, arg, sizeof(arg));
 		int iDest = StringToInt(arg);
 		
@@ -89,8 +84,7 @@ public Action EurekaTeleport(int iClient, const char[] szCommand, int nArgs)
 			return Plugin_Continue;
 		
 		int teleexit = TF2BH_PlayerGetObjectOfType(iClient, 1, 1);
-		if (IsValidEntity(teleexit) && TF2CA_BuilderHasCustomTeleporter(iClient, ATTR_SPEED_PAD))
-		{
+		if (IsValidEntity(teleexit) && TF2CA_BuilderHasCustomTeleporter(iClient, ATTR_SPEED_PAD)) {
 			EmitGameSoundToClient(iClient, "Player.UseDeny", iClient);
 			return Plugin_Handled;
 		}
@@ -103,51 +97,43 @@ public Action EurekaTeleport(int iClient, const char[] szCommand, int nArgs)
  */
 public Action HookSound(int clients[MAXPLAYERS], int &numClients, char sample[PLATFORM_MAX_PATH],
 		int &entity, int &channel, float &volume, int &level, int &pitch, int &flags,
-		char soundEntry[PLATFORM_MAX_PATH], int &seed)
-{
-	if (IsValidEntity(entity))
-	{
-		char className[64];
-		GetEntityClassname(entity, className, sizeof(className));
+		char soundEntry[PLATFORM_MAX_PATH], int &seed) {
+	if (IsValidEntity(entity)) {
+		char classname[64];
+		GetEntityClassname(entity, classname, sizeof(classname));
 	
-		if (StrEqual(className, "obj_attachment_sapper") && TF2_GetObjectType(entity) == TFObject_Sapper && channel == SNDCHAN_STATIC)
-		{
-			if (GetEntPropEnt(entity, Prop_Send, "m_hBuiltOnEntity") == -1)
-			{
-				if (StrEqual(sample, "weapons/sapper_timer.wav") || StrContains(sample, "spy_tape") != -1)
-				{
-					return Plugin_Handled;
-				}
-			}
+		if (StrEqual(classname, "obj_attachment_sapper") && TF2_GetObjectType(entity) == TFObject_Sapper && channel == SNDCHAN_STATIC && 
+			(GetEntPropEnt(entity, Prop_Send, "m_hBuiltOnEntity") == -1) && (StrEqual(sample, "weapons/sapper_timer.wav") || StrContains(sample, "spy_tape") != -1)) {
+			return Plugin_Handled;
 		}
 	}
 		
 	return Plugin_Continue;
 }
 
-public void TF2BH_OnBuildObject(int builder, int building, TFObjectType type)
-{
-	if (builder == -1)
-	{
+public void OnBuildObject(Event event, const char[] name, bool dontBroadcast) {
+	int builder = GetClientOfUserId(event.GetInt("userid"));
+	if (!builder) {
 		return;
 	}
 	
-	if (type != TFObject_Teleporter)
-	{
+	if (event.GetInt("object") != view_as<int>(TFObject_Teleporter)) {
 		return;
 	}
 
-	if (TF2CA_BuilderHasCustomTeleporter(builder, ATTR_SPEED_PAD))
-	{
-		ConvertTeleporterToSpeedPad(building, true);
+	int teleporter = event.GetInt("index");
+	if (!IsValidEntity(teleporter)) {
+		return;
+	}
+
+	if (TF2CA_BuilderHasCustomTeleporter(builder, ATTR_SPEED_PAD)) {
+		ConvertTeleporterToSpeedPad(teleporter, true);
 	}
 }
 
 /* Pad Creation/Revertion */
-void ConvertTeleporterToSpeedPad(int iEnt, bool bAddHealth)
-{
-	if (bAddHealth)
-	{
+void ConvertTeleporterToSpeedPad(int iEnt, bool bAddHealth) {
+	if (bAddHealth) {
 		SetVariantInt(75);
 		AcceptEntityInput(iEnt, "AddHealth", iEnt); //Spawns at 50% HP.
 		SetEntProp(iEnt, Prop_Send, "m_iTimesUsed", 0);
@@ -158,10 +144,8 @@ void ConvertTeleporterToSpeedPad(int iEnt, bool bAddHealth)
 	SDKHook(iEnt, SDKHook_Touch, OnPadTouch);
 }
 
-public Action OnPadTouch(int iPad, int iToucher)
-{
-	if (IsValidClient(iToucher))
-	{		
+public Action OnPadTouch(int iPad, int iToucher) {
+	if (IsValidClient(iToucher)) {
 		if (TF2_GetBuildingState(iPad) != TELEPORTER_STATE_READY)
 			return Plugin_Continue;
 		
@@ -170,8 +154,7 @@ public Action OnPadTouch(int iPad, int iToucher)
 		
 		if ((GetClientTeam(iToucher) == iPadTeam ||
 			(TF2_GetPlayerClass(iToucher) == TFClass_Spy && TF2_IsPlayerInCondition(iToucher, TFCond_Disguised) && GetEntProp(iToucher, Prop_Send, "m_nDisguiseTeam") == iPadTeam)) &&
-			GetEntPropEnt(iToucher, Prop_Send, "m_hGroundEntity") == iPad)
-		{
+			GetEntPropEnt(iToucher, Prop_Send, "m_hGroundEntity") == iPad) {
 			int level = GetEntProp(iPad, Prop_Send, "m_iUpgradeLevel");
 			
 			float flDur = g_flSpeedPadDurationTimes[level];
@@ -188,15 +171,12 @@ public Action OnPadTouch(int iPad, int iToucher)
 			EmitGameSoundToAll("Powerup.PickUpHaste", iToucher);
 			EmitGameSoundToAll("Building_Teleporter.Send", iPad);
 				
-			if (iToucher != iPadBuilder)
-			{
+			if (iToucher != iPadBuilder) {
 				SetEntProp(iPad, Prop_Send, "m_iTimesUsed", GetEntProp(iPad, Prop_Send, "m_iTimesUsed") + 1);
 				
-				if (!(GetEntProp(iPad, Prop_Send, "m_iTimesUsed") % 3)) //Add +2 points every 3 uses
-				{
+				if (!(GetEntProp(iPad, Prop_Send, "m_iTimesUsed") % 3)) { //Add +2 points every 3 uses
 					Event event = CreateEvent("player_escort_score", true);	//Using player_teleported unfortunately does not work.
-					if (event != null)
-					{
+					if (event != null) {
 						event.SetInt("player", iPadBuilder);
 						event.SetInt("points", 1);	//Not sure why this is adding double points
 						event.Fire();
@@ -209,37 +189,31 @@ public Action OnPadTouch(int iPad, int iToucher)
 	return Plugin_Continue;
 }
 
-stock void TF2_SetMatchingTeleporter(int iTele, int iMatch)	//Set the matching teleporter entity of a given Teleporter
-{
-	if (IsValidEntity(iTele) && HasEntProp(iTele, Prop_Send, g_szOffsetStartProp))
-	{
+//Set the matching teleporter entity of a given Teleporter
+stock void TF2_SetMatchingTeleporter(int iTele, int iMatch)	{
+	if (IsValidEntity(iTele) && HasEntProp(iTele, Prop_Send, g_szOffsetStartProp)) {
 		int iOffs = FindSendPropInfo("CObjectTeleporter", g_szOffsetStartProp) + g_iOffsetMatchingTeleporter;
 		SetEntDataEnt2(iTele, iOffs, iMatch, true);
 	}
 }
 
-stock int TF2_GetBuildingState(int iBuilding)
-{
+stock int TF2_GetBuildingState(int iBuilding) {
 	int iState = -1;
 	
-	if (IsValidEntity(iBuilding))
-	{
+	if (IsValidEntity(iBuilding)) {
 		iState = GetEntProp(iBuilding, Prop_Send, "m_iState");
 	}
 	
 	return iState;
 }
 
-stock void TF2_SetBuildingState(int iBuilding, int iState = 0)
-{	
-	if (IsValidEntity(iBuilding))
-	{
+stock void TF2_SetBuildingState(int iBuilding, int iState = 0) {
+	if (IsValidEntity(iBuilding)) {
 		SetEntProp(iBuilding, Prop_Send, "m_iState", iState);
 	}
 }
 
-stock bool IsValidClient(int client, bool replaycheck=true)
-{
+stock bool IsValidClient(int client, bool replaycheck=true) {
 	if(client<=0 || client>MaxClients)
 		return false;
 

@@ -35,8 +35,7 @@ static DynamicHook g_DHookGetHealRate;
 // Setup Stuffs            //
 /////////////////////////////
 
-public void Setup_DHook(GameData data)
-{
+public void Setup_DHook(GameData data) {
 	Setup_DHook_Forwards();
 	
 	g_DHookObjectOnGoActive = GetDHooksHookDefinition(data, "CBaseObject::OnGoActive()");
@@ -49,18 +48,17 @@ public void Setup_DHook(GameData data)
 	g_DHookDispenserStartHealing = GetDHooksHookDefinition(data, "CObjectDispenser::StartHealing()");
 	g_DHookGetHealRate = GetDHooksHookDefinition(data, "CObjectDispenser::GetHealRate()");
 
-	DynamicDetour DynDetourCalculateObjectCost = GetDHooksDetourDefinition(data, "CTFPlayerShared::CalculateObjectCost()");
-	DynDetourCalculateObjectCost.Enable(Hook_Post, DynDetour_CalculateObjectCostPost);
-	DynamicDetour DynDetourStopHealing = GetDHooksDetourDefinition(data, "CObjectDispenser::StopHealing()");
-	DynDetourStopHealing.Enable(Hook_Post, DynDetour_DispenserStopHealingPost);
-	DynamicDetour DynDetourGetConstructionMultiplier = GetDHooksDetourDefinition(data, "CBaseObject::GetConstructionMultiplier()");
-	DynDetourGetConstructionMultiplier.Enable(Hook_Post, DynDetour_GetConstructionMultiplierPost);
-	DynamicDetour DynDetourCouldHealTarget = GetDHooksDetourDefinition(data, "CObjectDispenser::CouldHealTarget");
-	DynDetourCouldHealTarget.Enable(Hook_Pre, DynDetour_CouldHealTargetPre);
+	DynamicDetour dynDetourCalculateObjectCost = GetDHooksDetourDefinition(data, "CTFPlayerShared::CalculateObjectCost()");
+	dynDetourCalculateObjectCost.Enable(Hook_Post, DynDetour_CalculateObjectCostPost);
+	DynamicDetour dynDetourStopHealing = GetDHooksDetourDefinition(data, "CObjectDispenser::StopHealing()");
+	dynDetourStopHealing.Enable(Hook_Post, DynDetour_DispenserStopHealingPost);
+	DynamicDetour dynDetourGetConstructionMultiplier = GetDHooksDetourDefinition(data, "CBaseObject::GetConstructionMultiplier()");
+	dynDetourGetConstructionMultiplier.Enable(Hook_Post, DynDetour_GetConstructionMultiplierPost);
+	DynamicDetour dynDetourCouldHealTarget = GetDHooksDetourDefinition(data, "CObjectDispenser::CouldHealTarget");
+	dynDetourCouldHealTarget.Enable(Hook_Pre, DynDetour_CouldHealTargetPre);
 }
 
-void Setup_DHook_Forwards()
-{
+void Setup_DHook_Forwards() {
 	g_ObjectOnGoActiveForward = new GlobalForward("TF2BH_ObjectOnGoActive", ET_Event, Param_Cell, Param_Cell, Param_Cell);
 
 	g_ObjectStartUpgradingForward = new GlobalForward("TF2BH_ObjectStartUpgrading", ET_Event, Param_Cell, Param_Cell, Param_Cell);
@@ -88,25 +86,19 @@ void Setup_DHook_Forwards()
 	g_DispenserCouldHealTargetForward = new GlobalForward("TF2BH_DispenserCouldHealTarget", ET_Hook, Param_Cell, Param_Cell, Param_Cell, Param_CellByRef);
 }
 
-void OnObjectCreated(int entity, const char[] classname)
-{
+void OnObjectCreated(int entity, const char[] classname) {
 	g_DHookObjectOnGoActive.HookEntity(Hook_Post, entity, DHook_ObjectOnGoActivePost);
 	g_DHookObjectStartUpgrading.HookEntity(Hook_Post, entity, DHook_ObjectStartUpgradingPost);
 	g_DHookObjectFinishUpgrading.HookEntity(Hook_Post, entity, DHook_ObjectFinishUpgradingPost);
 	g_DHookObjectGetMaxHealth.HookEntity(Hook_Post, entity, DHook_ObjectGetMaxHealthPost);
 
-	if (StrEqual(classname, "obj_sentrygun"))
-	{
+	if (StrEqual(classname, "obj_sentrygun")) {
 		g_DHookObjectSetModel.HookEntity(Hook_Pre, entity, DHook_SentrySetModelPre);
-	}
-	else if (StrEqual(classname, "obj_dispenser"))
-	{
+	} else if (StrEqual(classname, "obj_dispenser")) {
 		g_DHookObjectSetModel.HookEntity(Hook_Pre, entity, DHook_DispenserSetModelPre);
 		g_DHookDispenserStartHealing.HookEntity(Hook_Post, entity, DHook_DispenserStartHealingPost);
 		g_DHookGetHealRate.HookEntity(Hook_Post, entity, DispenserGetHealRatePost);
-	}
-	else if (StrEqual(classname, "obj_teleporter"))
-	{
+	} else if (StrEqual(classname, "obj_teleporter")) {
 		g_DHookObjectSetModel.HookEntity(Hook_Pre, entity, DHook_TeleporterSetModelPre);
 	}
 }
@@ -114,8 +106,7 @@ void OnObjectCreated(int entity, const char[] classname)
 /**
  * forward void TF2CA_ObjectOnGoActive(int builder, int building, TFObjectType buildingtype);
  */
-MRESReturn DHook_ObjectOnGoActivePost(int building)
-{
+MRESReturn DHook_ObjectOnGoActivePost(int building) {
 	int builder = TF2_GetObjectBuilder(building);
 
 	TFObjectType type = TF2_GetObjectType(building);
@@ -129,8 +120,7 @@ MRESReturn DHook_ObjectOnGoActivePost(int building)
 	return MRES_Ignored;
 }
 
-MRESReturn DHook_ObjectStartUpgradingPost(int building)
-{
+MRESReturn DHook_ObjectStartUpgradingPost(int building) {
 	int	builder	= TF2_GetObjectBuilder(building);
 
 	TFObjectType type = TF2_GetObjectType(building);
@@ -144,8 +134,7 @@ MRESReturn DHook_ObjectStartUpgradingPost(int building)
 	return MRES_Handled;
 }
 
-MRESReturn DHook_ObjectFinishUpgradingPost(int building)
-{
+MRESReturn DHook_ObjectFinishUpgradingPost(int building) {
 	int	builder	= TF2_GetObjectBuilder(building);
 
 	TFObjectType type = TF2_GetObjectType(building);
@@ -159,8 +148,7 @@ MRESReturn DHook_ObjectFinishUpgradingPost(int building)
 	return MRES_Handled;
 }
 
-MRESReturn DHook_ObjectGetMaxHealthPost(int building, DHookReturn hReturn)
-{
+MRESReturn DHook_ObjectGetMaxHealthPost(int building, DHookReturn hReturn) {
 	int builder = TF2_GetObjectBuilder(building);
 
 	TFObjectType type = TF2_GetObjectType(building);
@@ -175,8 +163,7 @@ MRESReturn DHook_ObjectGetMaxHealthPost(int building, DHookReturn hReturn)
 	Action result;
 	Call_Finish(result);
 
-	if (result > Plugin_Continue)
-	{
+	if (result > Plugin_Continue) {
 		hReturn.Value = health;
 		return MRES_Override;
 	}
@@ -184,8 +171,7 @@ MRESReturn DHook_ObjectGetMaxHealthPost(int building, DHookReturn hReturn)
 	return MRES_Ignored;
 }
 
-MRESReturn DHook_SentrySetModelPre(int building, DHookParam hParams)
-{
+MRESReturn DHook_SentrySetModelPre(int building, DHookParam hParams) {
 	int builder = TF2_GetObjectBuilder(building);
 	
 	char modelName[128];
@@ -198,8 +184,7 @@ MRESReturn DHook_SentrySetModelPre(int building, DHookParam hParams)
 	Action result;
 	Call_Finish(result);
 
-	if (result > Plugin_Continue)
-	{
+	if (result > Plugin_Continue) {
 		hParams.SetString(1, modelName);
 		return MRES_ChangedHandled;
 	}
@@ -207,8 +192,7 @@ MRESReturn DHook_SentrySetModelPre(int building, DHookParam hParams)
 	return MRES_Ignored;
 }
 
-MRESReturn DHook_DispenserSetModelPre(int building, DHookParam hParams)
-{
+MRESReturn DHook_DispenserSetModelPre(int building, DHookParam hParams) {
 	int builder = TF2_GetObjectBuilder(building);
 
 	char modelName[128];
@@ -221,8 +205,7 @@ MRESReturn DHook_DispenserSetModelPre(int building, DHookParam hParams)
 	Action result;
 	Call_Finish(result);
 
-	if (result > Plugin_Continue)
-	{
+	if (result > Plugin_Continue) {
 		hParams.SetString(1, modelName);
 		return MRES_ChangedHandled;
 	}
@@ -230,8 +213,7 @@ MRESReturn DHook_DispenserSetModelPre(int building, DHookParam hParams)
 	return MRES_Ignored;
 }
 
-MRESReturn DHook_TeleporterSetModelPre(int building, DHookParam hParams)
-{
+MRESReturn DHook_TeleporterSetModelPre(int building, DHookParam hParams) {
 	int builder = TF2_GetObjectBuilder(building);
 
 	char modelName[128];
@@ -244,8 +226,7 @@ MRESReturn DHook_TeleporterSetModelPre(int building, DHookParam hParams)
 	Action result;
 	Call_Finish(result);
 
-	if (result > Plugin_Continue)
-	{
+	if (result > Plugin_Continue) {
 		hParams.SetString(1, modelName);
 		return MRES_ChangedHandled;
 	}
@@ -256,13 +237,11 @@ MRESReturn DHook_TeleporterSetModelPre(int building, DHookParam hParams)
 /**
  * forward void TF2CA_DispenserStartHealing(int builder, int building, int patient);
  */
-MRESReturn DHook_DispenserStartHealingPost(int building, DHookParam hParams)
-{
+MRESReturn DHook_DispenserStartHealingPost(int building, DHookParam hParams) {
 	int builder = TF2_GetObjectBuilder(building);
 
 	int patient = hParams.Get(1);
-	if (!IsValidClient(patient))
-	{
+	if (!IsValidClient(patient)) {
 		patient = -1;
 	}
 
@@ -275,8 +254,7 @@ MRESReturn DHook_DispenserStartHealingPost(int building, DHookParam hParams)
 	return MRES_Ignored;
 }
 
-MRESReturn DispenserGetHealRatePost(int building, DHookReturn hReturn)
-{
+MRESReturn DispenserGetHealRatePost(int building, DHookReturn hReturn) {
 	int builder = TF2_GetObjectBuilder(building);
 
 	float healrate = hReturn.Value;
@@ -287,8 +265,7 @@ MRESReturn DispenserGetHealRatePost(int building, DHookReturn hReturn)
 	Action result;
 	Call_Finish(result);
 
-	if (result > Plugin_Continue)
-	{
+	if (result > Plugin_Continue) {
 		hReturn.Value = healrate;
 		return MRES_Override;
 	}
@@ -296,8 +273,7 @@ MRESReturn DispenserGetHealRatePost(int building, DHookReturn hReturn)
 	return MRES_Ignored;
 }
 
-MRESReturn DynDetour_CalculateObjectCostPost(Address pThis, DHookReturn hReturn, DHookParam hParams)
-{
+MRESReturn DynDetour_CalculateObjectCostPost(Address pThis, DHookReturn hReturn, DHookParam hParams) {
 	int cost = hReturn.Value;
 
 	int builder = hParams.Get(1);
@@ -311,8 +287,7 @@ MRESReturn DynDetour_CalculateObjectCostPost(Address pThis, DHookReturn hReturn,
 	Action result;
 	Call_Finish(result);
 
-	if (result > Plugin_Continue)
-	{
+	if (result > Plugin_Continue) {
 		hReturn.Value = cost;
 		return MRES_Override;
 	}
@@ -323,11 +298,13 @@ MRESReturn DynDetour_CalculateObjectCostPost(Address pThis, DHookReturn hReturn,
 /**
  * forward void TF2CA_DispenserStopHealing(int builder, int building, int patient);
  */
-MRESReturn DynDetour_DispenserStopHealingPost(int building, DHookParam hParams)
-{
+MRESReturn DynDetour_DispenserStopHealingPost(int building, DHookParam hParams) {
 	int builder = TF2_GetObjectBuilder(building);
 
 	int patient = DHookGetParam(hParams, 1);
+	if (!IsValidClient(patient)) {
+		patient = -1;
+	}
 
 	Call_StartForward(g_DispenserStopHealingForward);
 	Call_PushCell(builder);
@@ -338,8 +315,7 @@ MRESReturn DynDetour_DispenserStopHealingPost(int building, DHookParam hParams)
 	return MRES_Ignored;
 }
 
-MRESReturn DynDetour_GetConstructionMultiplierPost(int building, DHookReturn hReturn)
-{
+MRESReturn DynDetour_GetConstructionMultiplierPost(int building, DHookReturn hReturn) {
 	int builder = TF2_GetObjectBuilder(building);
 
 	TFObjectType type = TF2_GetObjectType(building);
@@ -354,8 +330,7 @@ MRESReturn DynDetour_GetConstructionMultiplierPost(int building, DHookReturn hRe
 	Action result;
 	Call_Finish(result);
 
-	if (result > Plugin_Continue)
-	{
+	if (result > Plugin_Continue) {
 		hReturn.Value = multiplier;
 		return MRES_Override;
 	}
@@ -363,13 +338,11 @@ MRESReturn DynDetour_GetConstructionMultiplierPost(int building, DHookReturn hRe
 	return MRES_Ignored;
 }
 
-MRESReturn DynDetour_CouldHealTargetPre(int building, DHookReturn hReturn, DHookParam hParams)
-{
+MRESReturn DynDetour_CouldHealTargetPre(int building, DHookReturn hReturn, DHookParam hParams) {
 	int builder = TF2_GetObjectBuilder(building);
 	int patient = hParams.Get(1);
 
-	if (IsValidClient(patient))
-	{
+	if (IsValidClient(patient)) {
 		Call_StartForward(g_DispenserCouldHealTargetForward);
 		Call_PushCell(builder);
 		Call_PushCell(building);
@@ -379,8 +352,7 @@ MRESReturn DynDetour_CouldHealTargetPre(int building, DHookReturn hReturn, DHook
 		Action ret;
 		Call_Finish(ret);
 
-		if (ret > Plugin_Continue)
-		{
+		if (ret > Plugin_Continue) {
 			hReturn.Value = result;
 			return MRES_Supercede;
 		}
