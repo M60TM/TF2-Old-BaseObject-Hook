@@ -45,6 +45,8 @@ public void OnPluginStart() {
 	Setup_SDKCalls(data);
 	Setup_DHook(data);
 
+	ClearDHooksDefinitions();
+
 	delete data;
 }
 
